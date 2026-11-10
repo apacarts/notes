@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1a22">
+<title>第14回定期演奏会 プログラムノート｜シンフォニックウィンズ東京</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;800;900&family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#e5196a; --red:#e8202a;
+    --bg:#0b1a22; --bg2:#10262f; --ink:#e9eef0; --sub:#9fb3ba; --line:rgba(255,255,255,.12);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth; -webkit-text-size-adjust:100%}
+  body{margin:0; color:var(--ink); font-family:"Noto Sans JP",system-ui,sans-serif;
+    font-size:16px; line-height:1.95; letter-spacing:.02em; background:#081218;}
+  /* marble-like backdrop */
+  .bgfx{position:fixed; inset:0; z-index:-1;
+    background:
+      radial-gradient(120% 70% at 85% 0%, rgba(40,95,115,.55), transparent 60%),
+      radial-gradient(90% 60% at 0% 40%, rgba(25,70,88,.45), transparent 65%),
+      radial-gradient(100% 80% at 60% 100%, rgba(0,0,0,.9), transparent 70%),
+      linear-gradient(180deg,#0f2833 0%,#0b1a22 45%,#060d11 100%);}
+  .bgfx svg{position:absolute; inset:0; width:100%; height:100%; opacity:.35; mix-blend-mode:overlay}
+
+  header.hero{padding:34px 22px 30px; max-width:720px; margin:0 auto}
+  .brand{border-left:4px solid var(--red); padding:2px 0 2px 12px; font-family:Montserrat,sans-serif;
+    font-weight:500; letter-spacing:.18em; font-size:13px; line-height:1.9; color:#fff}
+  .rex{margin:30px 0 0; text-align:right; font-family:Montserrat,sans-serif; font-weight:900; line-height:.86}
+  .rex .big{display:block; color:var(--pink); font-size:clamp(84px,30vw,170px); letter-spacing:-.02em}
+  .rex .name{display:block; color:#fff; font-size:clamp(30px,10.5vw,60px); letter-spacing:-.01em; margin-top:6px}
+  .sub{text-align:right; font-family:Montserrat,sans-serif; font-weight:800; font-size:clamp(14px,4.2vw,22px); line-height:1.25; margin-top:10px}
+  .sub .p{color:var(--pink)}
+  .title-ja{margin:30px 0 0; font-family:"Noto Serif JP",serif; font-weight:800; font-size:24px; line-height:1.45}
+  .title-ja small{display:block; font-size:14px; font-weight:600; color:var(--sub); margin-top:6px}
+  .pn{display:inline-block; margin-top:16px; background:var(--pink); color:#fff; font-family:Montserrat,sans-serif;
+    font-weight:800; letter-spacing:.2em; font-size:12px; padding:5px 12px}
+  .info{margin-top:18px; font-family:"Noto Serif JP",serif; font-weight:600; font-size:15px; line-height:1.75}
+  .info .date{font-size:30px; font-weight:800; letter-spacing:0}
+  .info .date small{font-size:15px}
+  .cast{margin-top:14px; font-size:14px; color:var(--sub); line-height:1.8}
+  .cast b{color:#fff; font-family:"Noto Serif JP",serif}
+
+  nav.toc{position:sticky; top:0; z-index:10; background:rgba(8,18,24,.86);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-bottom:2px solid var(--pink)}
+  nav.toc ol{list-style:none; margin:0 auto; max-width:720px; padding:10px 14px; display:flex; gap:8px; overflow-x:auto; scrollbar-width:none}
+  nav.toc ol::-webkit-scrollbar{display:none}
+  nav.toc a{display:block; white-space:nowrap; text-decoration:none; color:#fff; font-size:13px;
+    padding:5px 12px; border:1px solid var(--line); border-radius:2px}
+  nav.toc a.on{background:var(--pink); border-color:var(--pink)}
+
+  main{max-width:720px; margin:0 auto; padding:6px 20px 50px}
+  .index{margin:22px 0 6px; padding:0; list-style:none}
+  .index li{border-bottom:1px solid var(--line)}
+  .index a{display:block; padding:11px 2px; text-decoration:none; line-height:1.5}
+  .index .t{display:block; color:var(--pink); font-family:"Noto Serif JP",serif; font-weight:800; font-size:16px}
+  .index .c{display:block; color:var(--sub); font-size:12px; font-family:Montserrat,sans-serif; font-weight:500; letter-spacing:.03em}
+
+  section{scroll-margin-top:62px; padding-top:40px}
+  .composer{color:#fff; font-family:"Noto Serif JP",serif; font-weight:600; font-size:14px; margin:0;
+    border-left:4px solid var(--red); padding-left:10px; line-height:1.4}
+  h2{font-family:"Noto Serif JP",serif; font-weight:800; color:var(--pink); font-size:23px; line-height:1.45; margin:10px 0 2px}
+  .en{font-family:"Noto Serif JP",serif; color:var(--pink); opacity:.85; font-size:13px; margin:0 0 4px; line-height:1.5}
+  .mv{display:inline-block; color:#fff; background:rgba(229,25,106,.18); border:1px solid var(--pink);
+    font-size:12px; padding:0 10px; margin:4px 0 14px; letter-spacing:.1em}
+  section > p:not(.composer):not(.en):not(.mv){color:var(--ink)}
+  p{margin:0 0 1.1em}
+  h3{font-family:"Noto Serif JP",serif; font-weight:800; font-size:17px; margin:1.7em 0 .4em; color:#fff}
+  h3 span{color:var(--pink); margin-right:.5em; font-size:14px}
+  blockquote{margin:14px 0 1.2em; padding:14px 16px; border-left:4px solid var(--pink); background:rgba(255,255,255,.05);
+    font-family:"Noto Serif JP",serif; line-height:1.8}
+  blockquote small{display:block; color:var(--sub); font-family:"Noto Sans JP",sans-serif; font-size:12px; margin-top:6px}
+  ol.titles{padding-left:1.4em; margin:0 0 1.1em}
+  ol.titles li{margin-bottom:.5em; font-family:Montserrat,sans-serif; font-weight:500; font-size:14px; line-height:1.5}
+  ol.titles li::marker{color:var(--pink); font-weight:800}
+  ol.titles i{display:block; color:var(--sub); font-style:normal; font-family:"Noto Sans JP",sans-serif; font-size:13px}
+  .top{display:block; text-align:right; font-size:12px; color:var(--sub); text-decoration:none; margin-top:6px}
+  hr{border:0; border-top:1px solid var(--line); margin:34px 0 0}
+  footer{margin-top:10px; background:var(--pink); color:#fff; text-align:center; padding:16px 18px 22px; font-size:13px; line-height:1.8}
+  footer b{font-family:Montserrat,sans-serif; letter-spacing:.06em}
+  footer a{color:#fff}
+</style>
+</head>
+<body>
+<div class="bgfx" aria-hidden="true"><svg><filter id="m"><feTurbulence type="fractalNoise" baseFrequency=".006 .012" numOctaves="5" seed="7"/><feColorMatrix values="0 0 0 0 .55  0 0 0 0 .75  0 0 0 0 .8  0 0 0 1.4 -.55"/></filter><rect width="100%" height="100%" filter="url(#m)"/></svg></div>
+
+<header class="hero" id="top">
+  <div class="brand">SYMPHONIC<br>WINDS<br>TOKYO</div>
+  <p class="rex" aria-label="Rex Richardson"><span class="big">REX</span><span class="name">RICHARDSON</span></p>
+  <div class="sub">SYMPHONIC WINDS <span class="p">TOKYO</span><br>14th SUBSCRIPTION CONCERT</div>
+
+  <h1 class="title-ja">シンフォニックウィンズ東京<br>第14回定期演奏会<small>“新CD『マスター・オブ・サスペンス』発売記念”</small></h1>
+  <span class="pn">PROGRAM NOTES</span>
+  <div class="info">
+    <span class="date">2026 11.23<small>（月・祝）</small></span><br>
+    14:00開演（13:20開場）<br>
+    渋谷区文化総合センター大和田 さくらホール
+  </div>
+  <div class="cast">
+    指揮 <b>伊藤 慶亮</b><br>
+    トランペット <b>レックス・リチャードソン</b><br>
+    コンサートマスター <b>松下 洋</b>
+  </div>
+</header>
+
+<nav class="toc" aria-label="曲目">
+  <ol>
+    <li><a href="#cowboys">カウボーイ序曲</a></li>
+    <li><a href="#suspense">マスター・オブ・サスペンス</a></li>
+    <li><a href="#giants">巨人の肩に乗って</a></li>
+    <li><a href="#wilson">ジャズ・トランペット協奏曲</a></li>
+    <li><a href="#sky">シェルタリング・スカイ</a></li>
+    <li><a href="#rextreme">レクストリーム</a></li>
+  </ol>
+</nav>
+<main>
+<ul class="index">
+  <li><a href="#cowboys"><span class="t">J.ウィリアムズ　カウボーイ序曲</span><span class="c">John Williams / The Cowboys Overture</span></a></li>
+  <li><a href="#suspense"><span class="t">P.グレアム　ジャズ・トランペット協奏曲「マスター・オブ・サスペンス」より</span><span class="c">Peter Graham / from “Master of Suspense” Concerto for Jazz Trumpet</span></a></li>
+  <li><a href="#giants"><span class="t">P.グレアム　巨人の肩に乗って</span><span class="c">Peter Graham / On the Shoulders of Giants</span></a></li>
+  <li><a href="#wilson"><span class="t">D.ウィルソン　ジャズ・トランペット協奏曲より</span><span class="c">Dana Wilson / from Concerto for Jazz Trumpet</span></a></li>
+  <li><a href="#sky"><span class="t">J.マッキー　シェルタリング・スカイ</span><span class="c">John Mackey / Sheltering Sky</span></a></li>
+  <li><a href="#rextreme"><span class="t">J.スティーブンソン　協奏曲第2番『レクストリーム』より</span><span class="c">James Stephenson / from Concerto No. 2 for Trumpet “Rextreme”</span></a></li>
+</ul>
+
+<section id="cowboys">
+  <p class="composer">J.ウィリアムズ</p>
+  <h2>カウボーイ序曲</h2>
+  <p class="en">John Williams / The Cowboys Overture</p>
+  <p>『スター・ウォーズ』『E.T.』『ジュラシック・パーク』など、数々の名作映画の音楽で知られるジョン・ウィリアムズ（1932– ）。彼がまだ大作映画の作曲家として名を成す前、1972年に手がけたのが、ジョン・ウェイン主演の西部劇『11人のカウボーイ』（原題 The Cowboys／監督：マーク・ライデル）の音楽です。</p>
+  <p>物語の主人公は、老練な牧場主ウィル・アンダーセン。牛の大移動を目前に、雇っていたカウボーイたちがゴールドラッシュに沸く金鉱へと去ってしまい、彼はやむなく町の少年たちを雇って長旅に出ます。厳しい旅の中で少年たちは一人前の男へと成長していきますが、やがて牛の群れを狙う無法者が現れ……。</p>
+  <p>ウィリアムズは後にこの映画音楽をもとに演奏会用の序曲を書き上げ、自らが指揮するボストン・ポップス・オーケストラで演奏・録音しました。馬が疾走するような躍動感あふれるリズム、広大な大地を思わせる伸びやかな旋律、そしてカントリー風の軽快なフレーズ。伝統的な西部劇音楽の語法を下敷きにしながらも、随所にウィリアムズならではのモダンな響きが光ります。吹奏楽編曲版も広く親しまれ、今日では演奏会のオープニングを飾る定番曲となっています。</p>
+  <a class="top" href="#top">▲ ページ上部へ</a>
+</section>
+<hr>
+
+<section id="suspense">
+  <p class="composer">P.グレアム</p>
+  <h2>ジャズ・トランペット協奏曲《マスター・オブ・サスペンス》</h2>
+  <p class="en">Peter Graham / from “Master of Suspense” Concerto for Jazz Trumpet</p>
+  <p class="mv">第2・3楽章</p>
+  <p>ピーター・グレアム（1958– ）はスコットランド出身の作曲家。エドワード・グレグソンに師事し、ロンドン大学ゴールドスミス・カレッジで作曲の博士号を取得しました。英国の名門ブラック・ダイク・バンドのミュージック・アソシエイトを務めるなど、ブラスバンド界を代表する作曲家の一人であり、2002年にはアメリカ吹奏楽指導者協会（ABA）のオストウォルド賞を、アメリカ国外の作曲家として初めて受賞しています。</p>
+  <p>「サスペンスの巨匠（Master of Suspense）」――それは映画監督アルフレッド・ヒッチコックの代名詞です。2023年に作曲されたこの協奏曲は、本日のソリスト、レックス・リチャードソンの委嘱によるもので、高度な演奏技術に加えて、随所で即興演奏が求められます。全3楽章はそれぞれヒッチコックの名作映画を題材としており、第1楽章〈ヒートウェイブ〉は『裏窓』（1954）を描いています。本日は第2・3楽章を、委嘱者リチャードソン自身の独奏でお届けします。</p>
+  <h3><span>第2楽章</span>マーニー</h3>
+  <p>ティッピ・ヘドレンとショーン・コネリーが共演した『マーニー』（1964）が題材。過去の心の傷から他人に心を開くことができず、孤独の中で生きる女性マーニー。音楽は、親密さへの恐れと、孤立への怒りに揺れる彼女の内面を映し出します。</p>
+  <h3><span>第3楽章</span>20世紀特急（20th Century Limited）</h3>
+  <p>『北北西に進路を取れ』（1959）より。人違いから殺人の濡れ衣を着せられた広告マン、ロジャー・ソーンヒル（ケーリー・グラント）が、追っ手を逃れてニューヨーク発シカゴ行きの豪華特急「20世紀特急」に飛び乗る場面です。疾走する列車のように、ジャズのエネルギーに満ちたスリリングな音楽が展開します。</p>
+  <a class="top" href="#top">▲ ページ上部へ</a>
+</section>
+<hr>
+
+<section id="giants">
+  <p class="composer">P.グレアム</p>
+  <h2>巨人の肩に乗って</h2>
+  <p class="en">Peter Graham / On the Shoulders of Giants</p>
+  <blockquote>「私がより遠くを見渡せたのだとすれば、それは巨人たちの肩の上に立っていたからです」<small>――アイザック・ニュートンがロバート・フックに宛てた手紙（1676年2月5日）より</small></blockquote>
+  <p>ニュートンの有名な言葉を題名に掲げたこの作品は、ウェールズの名門コーリー・バンドとウェールズ・ナショナル・ユース・ブラスバンドの委嘱により作曲され、2009年5月2日、ベルギー・オーステンデでコーリー・バンドが初演しました。翌2010年には全英オープン選手権の課題曲にも選ばれたブラスバンド界屈指の難曲で、2011年には作曲者自身による吹奏楽版が作られています。副題は「金管と打楽器のための協奏曲」。</p>
+  <p>金管楽器の演奏芸術には実に多様なスタイルがあり、それが最も鮮やかに表れているのが「音楽のるつぼ」アメリカだ――とグレアムは述べています。この作品は、その多様性と、今日の「金管の巨人たち」の礎を築いたアメリカの偉大な金管奏者たちへのオマージュです。</p>
+  <h3><span>第1楽章</span>ファンファーレ</h3>
+  <p>伝説的なシカゴ交響楽団の金管セクションへのオマージュ。重厚で輝かしい「シカゴ・ブラス」のサウンドは、初期の音楽監督たちが好んだドイツ・オーストリア系のレパートリーによって育まれたとも言われます。そこでグレアムは、ブルックナー《交響曲第8番》終楽章の冒頭を音楽の旅の出発点に据えました。低音金管の堂々たるファンファーレに高音金管が応え、打楽器がその対話を際立たせます。音楽は切れ目なく第2楽章へと続きます。</p>
+  <h3><span>第2楽章</span>エレジー</h3>
+  <p>ジャズ発祥の地アメリカと、その金管の二大巨星――マイルス・デイヴィスとトミー・ドーシーに捧げられた楽章です。マイルスについては、とりわけ盟友ギル・エヴァンスが彼のために創り出した、柔らかく陰影に富んだサウンド世界がイメージされています。トミー・ドーシーは「叙情的なトロンボーン奏法の父」と称された名手。さらに、ジャズの源流が黒人霊歌にあることへの敬意から、霊歌《スティール・アウェイ》が楽章全体の土台に据えられています。神秘的な響きの中、スウィングのリズムに導かれてソロが浮かび上がり、やがて静かに終楽章へと橋渡しされます。</p>
+  <h3><span>第3楽章</span>ファンタジー・ブリランテ</h3>
+  <p>第1楽章の動機で始まるフィナーレは、20世紀初頭、スーザ・バンドで名を馳せた金管のヴィルトゥオーソたちへのオマージュです。楽章の中心では、コルネットのハーバート・L・クラーク、トロンボーンのアーサー・プライアー、ユーフォニアムのシモーネ・マンティアが「時の霧の中から」姿を現し、それぞれの代表的なソロの断片を披露します（スーザ・バンドで最も高給のソリストだったドラマー、オーガスト・ヘルメケへの目配せも）。個々の名人芸はやがて全合奏の力強い和音の連打――音で描かれた「巨人の足音」――へと至り、現代の奏者たちが先人に捧げるトリビュートを劇的に締めくくります。</p>
+  <a class="top" href="#top">▲ ページ上部へ</a>
+</section>
+<hr>
+
+<section id="wilson">
+  <p class="composer">D.ウィルソン</p>
+  <h2>ジャズ・トランペット協奏曲</h2>
+  <p class="en">Dana Wilson / from Concerto for Jazz Trumpet</p>
+  <p class="mv">第1・3楽章</p>
+  <p>ダナ・ウィルソン（1946– ）はアメリカの作曲家。長年イサカ大学で教鞭をとり、フルート、ホルン、トロンボーン、テューバなど、さまざまな楽器のための協奏曲を数多く手がけてきました。ジャズ・ピアニストとしての経験も持ち、クラシックとジャズの双方に根ざした作風で知られています。</p>
+  <p>この《ジャズ・トランペット協奏曲》は、アメリカ各地のアンサンブルによる共同委嘱で作曲され、レックス・リチャードソンの独奏とリッチモンド交響楽団によって全曲初演されました。吹奏楽版の初演は、同じくリチャードソンの独奏により東京で行われています。ソロ・パートはすべて記譜されていますが、随所に任意の即興セクションが設けられており、ソリストの個性が存分に発揮される作品です。</p>
+  <p>各楽章の題名は、イギリス出身の詩人W.H.オーデンの詩「If I Could Tell You（もし言えるなら）」の詩句から取られています。</p>
+  <ol class="titles">
+    <li>The winds must come from somewhere when they blow<i>風が吹くなら、それはどこかから来るはず</i></li>
+    <li>There must be reasons why the leaves decay<i>木の葉が朽ちるのには、わけがあるはず</i></li>
+    <li>Time will say nothing but I told you so<i>時はただ「だから言っただろう」と言うだけ</i></li>
+  </ol>
+  <p>答えの見えない問いを、繰り返し静かに投げかけるオーデンの詩。その言葉に導かれた音楽の中で、トランペットはときに軽やかにスウィングし、ときに鋭く叫び、ときに語りかけます。本日は第1楽章と第3楽章を、初演者リチャードソンの独奏でお聴きいただきます。</p>
+  <a class="top" href="#top">▲ ページ上部へ</a>
+</section>
+<hr>
+
+<section id="sky">
+  <p class="composer">J.マッキー</p>
+  <h2>シェルタリング・スカイ</h2>
+  <p class="en">John Mackey / Sheltering Sky</p>
+  <p>ジョン・マッキー（1973– ）は、現代アメリカの吹奏楽界を代表する作曲家の一人です。《レッドライン・タンゴ》《アスファルト・カクテル》など、エネルギッシュで華やかな作品で知られる彼ですが、2012年に書かれたこの《シェルタリング・スカイ》は、それらとはまったく趣を異にする、穏やかで素朴な作品です。イリノイ州オスウェゴの2つの中学校バンドの委嘱で作曲され、同年4月21日に初演されました。</p>
+  <p>この曲の旋律には、どこか懐かしい民謡のような響きがあります。聴く人によっては「ダニー・ボーイ」や「シェナンドー」の面影を感じるかもしれません。しかし、これらはすべてマッキー自身のオリジナルの旋律です。グレインジャーが《植民地の歌》で、民謡のように聴こえる自作の旋律に故郷オーストラリアへの思いを込めたように、マッキーもまた、聴き手の心の中にある「懐かしさ」そのものを音にしたのです。</p>
+  <p>静かな和音で始まった音楽は、ゆるやかに旋律を紡ぎながら広がり、やがて溶けるように消えていきます。そして最後に冒頭の穏やかな響きが戻り、和音はようやく安らかに落ち着きます。時が止まったような、静かで美しいひとときをお楽しみください。</p>
+  <a class="top" href="#top">▲ ページ上部へ</a>
+</section>
+<hr>
+
+<section id="rextreme">
+  <p class="composer">J.スティーブンソン</p>
+  <h2>トランペット協奏曲第2番《レクストリーム》</h2>
+  <p class="en">James Stephenson / from Concerto No. 2 for Trumpet “Rextreme”</p>
+  <p class="mv">第3楽章</p>
+  <p>ジェームズ・M・スティーブンソンは、アメリカの作曲家。自身もトランペット奏者として活躍した経歴を持ち、トランペットのための協奏曲やソナタを数多く生み出しています。</p>
+  <p>1987年の夏、ミシガン州カラマズーで開かれた国際トランペット・ギルド（ITG）の大会で、若きトランペット奏者だったスティーブンソンは、同じく若き日のレックス・リチャードソンと出会いました。それから23年後、親友となったレックスのために書かれたのが、この協奏曲第2番です。2010年7月6日、オーストラリア・シドニーで開かれたITGの大会で初演されました。</p>
+  <p>題名の《レクストリーム（Rextreme）》は「Rex」と「Extreme（極限）」を掛け合わせた造語。クラシカルな現代的トランペット書法、フリューゲルホルンによる美しいバラード、そして即興ソロ――ジャズとクラシックを自在に行き来するレックスの多彩な魅力を余すところなく引き出すことを狙った作品です。もとは管弦楽伴奏で書かれましたが、吹奏楽版、ブラスバンド版も作られています。なお、リチャードソンのアルバム『Freedom of Movement』に収められた吹奏楽版の録音では、作曲者自身の指揮のもと、私たちシンフォニックウィンズ東京が伴奏を務めました。</p>
+  <p>本日お届けする第3楽章は「Vivo – Presto – Allegro Rex-oso」。最後の「Rex-oso」も、音楽用語の語尾「-oso（〜風に）」をもじった遊び心あふれる指示です。目まぐるしく駆け抜ける音楽の中、ヴィルトゥオーソ的な終結部の直前には、ソリストが自由に即興するカデンツァが置かれています。協奏曲の締めくくりにふさわしい、圧巻のフィナーレです。</p>
+  <a class="top" href="#top">▲ ページ上部へ</a>
+</section>
+</main>
+<footer>
+  <b>Symphonic Winds Tokyo with Rex Richardson</b><br>
+  14th Subscription Concert　Mon. 23 Nov 2026 14:00<br>
+  主催：APAC ARTS PROMOTION　｜　<a href="https://apacarts.com">apacarts.com</a>
+</footer>
+
+<script>
+(function(){
+  var links=[].slice.call(document.querySelectorAll('nav.toc a'));
+  var secs=links.map(function(a){return document.getElementById(a.getAttribute('href').slice(1));});
+  var bar=document.querySelector('nav.toc ol'), last=-2;
+  function update(){
+    var y=window.scrollY+90, cur=-1;
+    secs.forEach(function(s,i){ if(s && s.offsetTop<=y) cur=i; });
+    if(cur===last) return; last=cur;
+    links.forEach(function(a,i){ a.classList.toggle('on', i===cur); });
+    if(cur>=0) bar.scrollTo({left:links[cur].offsetLeft-14, behavior:'smooth'});
+  }
+  window.addEventListener('scroll',update,{passive:true}); update();
+})();
+</script>
+</body>
+</html>
