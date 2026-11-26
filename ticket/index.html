@@ -45,6 +45,7 @@ input,select,textarea{width:100%;font-size:16px;padding:11px 12px;border:1px sol
 .seat .n{flex:1;font-size:14px}
 .seat button{border:1px solid var(--o);background:transparent;color:var(--o);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700}
 .seat .used{color:var(--sub);font-size:13px}
+.seat .sent{color:#1a9c5b;font-size:12px;font-weight:700}
 .seat button.main{background:var(--o);color:#fff;border-color:var(--o)}
 body.tfo .seat button.main{color:#1a1405}
 .seat button.link{border:0;padding:7px 4px;font-weight:400;text-decoration:underline;color:var(--sub)}
@@ -290,8 +291,12 @@ function splitBox(t) {
     const n = document.createElement('span'); n.className = 'n'; n.textContent = s.seat + '枚目（' + s.kind + '）'; row.appendChild(n);
     if (s.used) { const u = document.createElement('span'); u.className = 'used'; u.textContent = '入場済み'; row.appendChild(u); }
     else {
-      const b1 = document.createElement('button'); b1.type = 'button'; b1.textContent = 'LINE友だちに送る'; b1.className = 'main';
-      b1.addEventListener('click', () => shareSeat(t, s));
+      const st = document.createElement('span'); st.className = 'sent'; st.textContent = '送信済み';
+      const b1 = document.createElement('button'); b1.type = 'button';
+      const mark = on => { st.hidden = !on; b1.textContent = on ? 'もう一度送る' : 'LINE友だちに送る'; b1.className = on ? '' : 'main'; };
+      mark(!!s.sent);
+      row.appendChild(st);
+      b1.addEventListener('click', async () => { if (await shareSeat(t, s)) { s.sent = true; mark(true); } });
       const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = 'リンクをコピー'; b2.className = 'link';
       b2.addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(s.url); b2.textContent = 'コピーしました'; }
@@ -307,7 +312,7 @@ async function shareSeat(t, s) {
   const text = t.title + '\n' + t.date + '\nチケット（' + s.kind + '・1名）をお送りします。当日はこのページのQRコードを受付でご提示ください。\n' + s.url;
   try {
     if (liff.isApiAvailable('shareTargetPicker')) {
-      await liff.shareTargetPicker([{ type: 'flex', altText: 'チケットが届きました', contents: {
+      const res = await liff.shareTargetPicker([{ type: 'flex', altText: 'チケットが届きました', contents: {
         type: 'bubble',
         header: { type: 'box', layout: 'vertical', backgroundColor: '#e8792e', contents: [{ type: 'text', text: 'チケットが届きました', color: '#ffffff', weight: 'bold' }] },
         body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
@@ -316,7 +321,11 @@ async function shareSeat(t, s) {
           { type: 'text', text: s.kind + '・1名', size: 'sm', margin: 'md' },
           { type: 'text', text: '当日はQRコードを受付でご提示ください。', wrap: true, size: 'xs', color: '#666666' }] },
         footer: { type: 'box', layout: 'vertical', contents: [{ type: 'button', style: 'primary', color: '#e8792e', action: { type: 'uri', label: 'チケットを表示', uri: s.url } }] } } }]);
-      return;   // 送信またはキャンセル
+      if (res && res.status === 'success') {
+        api({ action: 'sent', idToken: token(), code: t.code, seat: s.seat }).catch(() => {});
+        return true;
+      }
+      return false;   // キャンセル
     }
   } catch (e) { /* 使えない場合は下の方法で送る */ }
   liff.openWindow({ url: 'https://line.me/R/share?text=' + encodeURIComponent(text), external: false });
