@@ -57,7 +57,8 @@ body.tfo .cprow button{color:#1a1405}
 .seat .sent{color:#1a9c5b;font-size:12px;font-weight:700}
 .seat button.main{background:var(--o);color:#fff;border-color:var(--o)}
 body.tfo .seat button.main{color:#1a1405}
-.seat button.link{border:0;padding:7px 4px;font-weight:400;text-decoration:underline;color:var(--sub)}
+.seat{flex-wrap:wrap}
+.seat button.link{border:0;padding:2px 0;font-weight:400;font-size:12px;text-decoration:underline;color:var(--sub);background:none;flex-basis:100%;text-align:right}
 .ticket{border:2px solid var(--o);border-radius:14px;padding:16px;margin-bottom:14px;background:#fff;text-align:center}
 .ticket .code{font-size:26px;font-weight:800;letter-spacing:.08em}
 .ticket .qr{display:flex;justify-content:center;margin:10px 0}
@@ -327,7 +328,7 @@ async function loadTickets(fresh) {
 function splitBox(t) {
   const box = document.createElement('details'); box.className = 'split';
   if (t.seats.some(s => s.sent)) box.open = true;
-  box.innerHTML = '<summary>チケットを分ける（LINE友だちに1枚ずつ送る）</summary><p class="muted">別々に来場される方へ、1枚分のQRコードをLINEで送れます。LINEを使っていない方には「リンクをコピー」でメールなどからお送りください。送ったチケットは、お手元のQRでは入場できなくなります。</p>';
+  box.innerHTML = '<summary>チケットを分ける（LINE友だちに1枚ずつ送る）</summary><p class="muted">別々に来場される方へ、1枚分のQRコードをLINEで送れます。LINEを使っていない方には「LINE以外で送る」からメールやSMSでお送りください。送ったチケットは、お手元のQRでは入場できなくなります。</p>';
   t.seats.forEach(s => {
     const row = document.createElement('div'); row.className = 'seat';
     const n = document.createElement('span'); n.className = 'n'; n.textContent = s.seat + '枚目（' + s.kind + '）'; row.appendChild(n);
@@ -337,8 +338,17 @@ function splitBox(t) {
     const btn = (label, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; if (cls) b.className = cls; b.addEventListener('click', () => fn(b)); row.appendChild(b); return b; };
     if (!s.sent) {
       btn('LINE友だちに送る', 'main', async b => { b.disabled = true; if (await shareSeat(t, s, s.url)) await seatOp(t, s, 'sent'); b.disabled = false; });
-      btn('リンクをコピー', 'link', async b => {
-        try { await navigator.clipboard.writeText(s.url); } catch (e) { prompt('このリンクを送ってください', s.url); }
+      btn('LINE以外で送る（メール・SMSなど）', 'link', async b => {
+        const text = t.title + '\n' + t.date + '\nチケット（' + s.kind + '・1名）をお送りします。当日はこのページのQRコードを受付でご提示ください。';
+        let done = false;
+        if (navigator.share) {
+          try { await navigator.share({ title: 'チケットをお送りします', text: text, url: s.url }); done = true; }
+          catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        if (!done) {
+          try { await navigator.clipboard.writeText(text + '\n' + s.url); alert('リンクをコピーしました。メールやSMSに貼り付けて送ってください。'); }
+          catch (e) { prompt('このリンクを送ってください', s.url); }
+        }
         await seatOp(t, s, 'sent');
       });
     } else {
