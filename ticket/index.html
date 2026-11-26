@@ -268,7 +268,9 @@ async function loadTickets(fresh) {
       if (t.showQr) {
         const q = qrcode(0, 'M'); q.addData(t.qr); q.make();
         d.querySelector('.qr').innerHTML = q.createImgTag(6, 8, 'QRコード');
-        const p = document.createElement('p'); p.className = 'muted'; p.textContent = '当日はこのQRコードを受付でご提示ください。'; d.appendChild(p);
+        const p = document.createElement('p'); p.className = 'muted';
+        p.textContent = t.own < t.remaining ? '当日はこのQRコードを受付でご提示ください（このQRで入場できるのは ' + t.own + '名です。送ったチケットは各自のQRで入場します）。' : '当日はこのQRコードを受付でご提示ください。';
+        d.appendChild(p);
         if (t.seats && t.seats.length) d.appendChild(splitBox(t));
       } else {
         d.querySelector('.qr').remove();
@@ -285,31 +287,48 @@ async function loadTickets(fresh) {
 // 複数枚のチケットを1枚ずつ同行者に送る
 function splitBox(t) {
   const box = document.createElement('details'); box.className = 'split';
-  box.innerHTML = '<summary>チケットを分ける（LINE友だちに1枚ずつ送る）</summary><p class="muted">別々に来場される方へ、1枚分のQRコードをLINEで送れます。LINEを使っていない方には「リンクをコピー」でメールなどからお送りください。お手元のQRコードは、残りの枚数分としてそのまま使えます。</p>';
+  if (t.seats.some(s => s.sent)) box.open = true;
+  box.innerHTML = '<summary>チケットを分ける（LINE友だちに1枚ずつ送る）</summary><p class="muted">別々に来場される方へ、1枚分のQRコードをLINEで送れます。LINEを使っていない方には「リンクをコピー」でメールなどからお送りください。送ったチケットは、お手元のQRでは入場できなくなります。</p>';
   t.seats.forEach(s => {
     const row = document.createElement('div'); row.className = 'seat';
     const n = document.createElement('span'); n.className = 'n'; n.textContent = s.seat + '枚目（' + s.kind + '）'; row.appendChild(n);
-    if (s.used) { const u = document.createElement('span'); u.className = 'used'; u.textContent = '入場済み'; row.appendChild(u); }
-    else {
-      const st = document.createElement('span'); st.className = 'sent'; st.textContent = '送信済み';
-      const b1 = document.createElement('button'); b1.type = 'button';
-      const mark = on => { st.hidden = !on; b1.textContent = on ? 'もう一度送る' : 'LINE友だちに送る'; b1.className = on ? '' : 'main'; };
-      mark(!!s.sent);
-      row.appendChild(st);
-      b1.addEventListener('click', async () => { if (await shareSeat(t, s)) { s.sent = true; mark(true); } });
-      const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = 'リンクをコピー'; b2.className = 'link';
-      b2.addEventListener('click', async () => {
-        try { await navigator.clipboard.writeText(s.url); b2.textContent = 'コピーしました'; }
-        catch (e) { prompt('このリンクを送ってください', s.url); }
+    const st = document.createElement('span');
+    if (s.used) { st.className = 'used'; st.textContent = '入場済み'; row.appendChild(st); box.appendChild(row); return; }
+    if (s.sent) { st.className = 'sent'; st.textContent = s.opened ? '受け取り済み' : '送信済み'; row.appendChild(st); }
+    const btn = (label, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; if (cls) b.className = cls; b.addEventListener('click', () => fn(b)); row.appendChild(b); return b; };
+    if (!s.sent) {
+      btn('LINE友だちに送る', 'main', async b => { b.disabled = true; if (await shareSeat(t, s, s.url)) await seatOp(t, s, 'sent'); b.disabled = false; });
+      btn('リンクをコピー', 'link', async b => {
+        try { await navigator.clipboard.writeText(s.url); } catch (e) { prompt('このリンクを送ってください', s.url); }
+        await seatOp(t, s, 'sent');
       });
-      row.appendChild(b1); row.appendChild(b2);
+    } else {
+      btn('送り直す', '', async b => {
+        if (!confirm(s.seat + '枚目を送り直します。前に送ったリンクとQRは使えなくなります。よろしいですか？')) return;
+        b.disabled = true;
+        const j = await seatOp(t, s, 'revoke', true);
+        if (j && await shareSeat(t, s, j.url)) await seatOp(t, s, 'sent');
+        else loadTickets(true);
+      });
+      btn('手元に戻す', 'link', async b => {
+        if (!confirm(s.seat + '枚目を取り消して、お手元のQRに戻します。送ったリンクとQRは使えなくなります。よろしいですか？')) return;
+        b.disabled = true; await seatOp(t, s, 'revoke');
+      });
     }
     box.appendChild(row);
   });
   return box;
 }
-async function shareSeat(t, s) {
-  const text = t.title + '\n' + t.date + '\nチケット（' + s.kind + '・1名）をお送りします。当日はこのページのQRコードを受付でご提示ください。\n' + s.url;
+// 送った印を付ける／取り消す（終わったらマイチケットを読み直す）
+async function seatOp(t, s, op, noReload) {
+  try {
+    const j = await api({ action: op, idToken: token(), code: t.code, seat: s.seat });
+    if (!noReload) await loadTickets(true);
+    return j;
+  } catch (e) { alert(e.message); loadTickets(true); return null; }
+}
+async function shareSeat(t, s, url) {
+  const text = t.title + '\n' + t.date + '\nチケット（' + s.kind + '・1名）をお送りします。当日はこのページのQRコードを受付でご提示ください。\n' + url;
   try {
     if (liff.isApiAvailable('shareTargetPicker')) {
       const res = await liff.shareTargetPicker([{ type: 'flex', altText: 'チケットが届きました', contents: {
@@ -320,15 +339,13 @@ async function shareSeat(t, s) {
           { type: 'text', text: t.date, wrap: true, size: 'xs', color: '#666666' },
           { type: 'text', text: s.kind + '・1名', size: 'sm', margin: 'md' },
           { type: 'text', text: '当日はQRコードを受付でご提示ください。', wrap: true, size: 'xs', color: '#666666' }] },
-        footer: { type: 'box', layout: 'vertical', contents: [{ type: 'button', style: 'primary', color: '#e8792e', action: { type: 'uri', label: 'チケットを表示', uri: s.url } }] } } }]);
-      if (res && res.status === 'success') {
-        api({ action: 'sent', idToken: token(), code: t.code, seat: s.seat }).catch(() => {});
-        return true;
-      }
+        footer: { type: 'box', layout: 'vertical', contents: [{ type: 'button', style: 'primary', color: '#e8792e', action: { type: 'uri', label: 'チケットを表示', uri: url } }] } } }]);
+      if (res && res.status === 'success') return true;
       return false;   // キャンセル
     }
   } catch (e) { /* 使えない場合は下の方法で送る */ }
   liff.openWindow({ url: 'https://line.me/R/share?text=' + encodeURIComponent(text), external: false });
+  return true;
 }
 
 async function submit() {
