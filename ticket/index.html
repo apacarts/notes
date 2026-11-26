@@ -147,10 +147,13 @@ function renderPayNote() {
     : '申し込みから5日以内にお振り込みください。振込先はメールでお知らせします。チケットはすぐにLINEに届きます。';
 }
 
-async function loadTickets() {
-  $('tickets').innerHTML = '<p class="muted center">読み込み中…</p>';
+let ticketsP = null;
+function fetchTickets() { ticketsP = api({ action: 'tickets', idToken: token() }); ticketsP.catch(() => {}); return ticketsP; }
+async function loadTickets(fresh) {
+  if (!$('tickets').children.length) $('tickets').innerHTML = '<p class="muted center">読み込み中…</p>';
   try {
-    const j = await api({ action: 'tickets', idToken: token() });
+    const j = await ((!fresh && ticketsP) || fetchTickets());
+    ticketsP = null;
     $('tickets').innerHTML = '';
     $('noTickets').classList.toggle('hide', j.tickets.length > 0);
     j.tickets.forEach(t => {
@@ -190,7 +193,7 @@ async function submit() {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('email'))) errs.push('メールアドレスをご確認ください');
   if (!$('agree').checked) errs.push('確認事項にチェックを入れてください');
   if (errs.length) { $('err').textContent = errs.join('\n'); return; }
-  sending = true; $('submit').disabled = true; $('submit').textContent = '送信中…';
+  sending = true; $('submit').disabled = true; $('submit').textContent = '送信中…（10秒ほどかかります）';
   try {
     const j = await api({
       action: 'book', idToken: token(), concert: $('concert').value,
@@ -209,19 +212,23 @@ async function submit() {
         ? 'お支払い金額は ' + yen(j.total) + ' です。' + (j.deadline ? j.deadline + 'までに' : '') + 'お振り込みください。振込先はメールでお知らせしました。チケットはLINEとマイチケットでご確認いただけます。'
         : 'チケットはLINEとマイチケットでご確認いただけます。当日はお支払いが不要です。';
     }
-    show('done');
+    show('done'); fetchTickets();
   } catch (e) { $('err').textContent = e.message; }
   sending = false; $('submit').disabled = false; $('submit').textContent = '申し込む';
 }
 
 (async () => {
   const env = new URLSearchParams(location.search).get('env') === 'dev' ? 'dev' : 'prod';
+  // 受付情報はLINEの準備と同時に読み込み、前回の内容があれば先に表示に使う
+  const infoP = api({ action: 'info' }).then(j => { try { localStorage.setItem('ot_info', JSON.stringify(j)); } catch (e) {} return j; });
+  let cached = null; try { cached = JSON.parse(localStorage.getItem('ot_info') || 'null'); } catch (e) {}
   try {
     await liff.init({ liffId: LIFF[env] });
     if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
   } catch (e) { fatal('LINEの読み込みに失敗しました。LINEアプリから開き直してください。\n' + e.message); return; }
   try {
-    info = await api({ action: 'info' });
+    info = cached || await infoP;
+    if (cached) infoP.catch(() => {});
   } catch (e) { fatal('受付情報を読み込めませんでした。時間をおいて開き直してください。\n' + e.message); return; }
   $('loading').classList.add('hide');
   if (!info.open || !info.concerts.length) {
@@ -241,7 +248,7 @@ async function submit() {
   $('tabBook').addEventListener('click', () => show('book'));
   $('tabMine').addEventListener('click', () => { show('mine'); loadTickets(); });
   $('toMine').addEventListener('click', () => { show('mine'); loadTickets(); });
-  if (new URLSearchParams(location.search).get('view') === 'tickets') { show('mine'); loadTickets(); } else show('book');
+  if (new URLSearchParams(location.search).get('view') === 'tickets') { show('mine'); loadTickets(); } else { show('book'); fetchTickets(); }
 })();
 </script>
 </body>
