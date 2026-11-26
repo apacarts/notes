@@ -39,6 +39,15 @@ input,select,textarea{width:100%;font-size:16px;padding:11px 12px;border:1px sol
 .btn.sub{background:#fff;color:var(--od);border:1px solid var(--o)}
 .err{color:#b3261e;font-size:14px;margin-top:10px;white-space:pre-line}
 .muted{color:var(--sub);font-size:13px}
+.cprow{display:flex;gap:8px;align-items:stretch}
+.cprow input{flex:1;min-width:0}
+.cprow button{flex:none;border:0;border-radius:10px;background:var(--o);color:#fff;font-weight:700;font-size:15px;padding:0 18px}
+body.tfo .cprow button{color:#1a1405}
+.cprow button:disabled{opacity:.5}
+.cpres{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(26,156,91,.1);font-size:14px}
+.cpres.ng{background:rgba(192,57,43,.1)}
+.cpres .h{font-weight:700;margin-bottom:4px}
+.cpres .x{color:var(--sub);font-size:12px;margin-top:4px}
 .split{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;text-align:left}
 .split summary{font-weight:700;cursor:pointer;padding:6px 0}
 .seat{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
@@ -126,7 +135,8 @@ body.tfo .hero{display:block;margin:-16px -16px 14px;position:relative;backgroun
       <p class="muted hide" id="friendNote" style="margin:6px 0 0"></p>
       <div class="total"><span id="sumLabel">合計</span><span id="sum"></span></div>
       <label for="coupon">クーポンコード <span class="hint">お持ちの方のみ（LINEお友達割引との併用不可・お得な方を適用）</span></label>
-      <input id="coupon" autocomplete="off" autocapitalize="characters">
+      <div class="cprow"><input id="coupon" autocomplete="off" autocapitalize="characters"><button type="button" id="cpBtn">適用</button></div>
+      <div id="cpRes" class="cpres hide"></div>
     </div>
 
     <div class="card">
@@ -195,12 +205,41 @@ function renderPrices() {
   const a = +$('adult').value, u = +$('u25').value;
   $('pA').innerHTML = priceHtml(info.priceAdult, offA());
   $('pU').innerHTML = priceHtml(info.priceU25, offU());
-  $('sum').textContent = yen(a * (info.priceAdult - offA()) + u * (info.priceU25 - offU()));
+  $('sum').textContent = yen(quote ? quote.total : a * (info.priceAdult - offA()) + u * (info.priceU25 - offU()));
+  $('sumLabel').textContent = quote && quote.applied ? '合計（クーポン適用後）' : '合計';
   const n = $('friendNote');
   if (isFriend === false) {
     n.innerHTML = '公式LINE（@apacarts）をお友達追加すると、チケットが1枚につき' + yen(info.lineOff == null ? 500 : info.lineOff) + '引きになります。<a href="https://line.me/R/ti/p/@apacarts">お友達追加はこちら</a>（追加後にこの画面を開き直してください）';
     n.classList.remove('hide');
   } else n.classList.add('hide');
+}
+// クーポンを適用して、割引後の金額を表示する（実際の金額は申込時にサーバーで再計算）
+let quote = null;
+function clearQuote() { if (!quote && $('cpRes').classList.contains('hide')) return; quote = null; $('cpRes').classList.add('hide'); renderPrices(); }
+async function applyCoupon() {
+  const code = $('coupon').value.trim(), box = $('cpRes'), b = $('cpBtn');
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  if (!code) { box.className = 'cpres ng'; box.textContent = 'クーポンコードを入力してください'; return; }
+  b.disabled = true; b.textContent = '確認中…';
+  try {
+    const j = await api({ action: 'quote', idToken: token(), concert: $('concert').value,
+      adult: +$('adult').value, u25: +$('u25').value, coupon: code });
+    if (j.applied) {
+      quote = j;
+      box.className = 'cpres';
+      box.innerHTML = '<div class="h">✓ クーポン「' + esc(j.coupon) + '」を適用しました</div>' +
+        j.rows.map(r => esc(r.label) + '：' + r.parts.map(p => esc(p).replace(/(\d+)（/, (m, n) => yen(n) + '（').replace(/ (\d+)$/, (m, n) => ' ' + yen(n))).join(' ＋ ')).join('<br>') +
+        '<div class="h" style="margin-top:6px">合計 ' + yen(j.total) + (j.regular > j.total ? '（通常 ' + yen(j.regular) + '）' : '') + '</div>' +
+        j.notes.map(n => '<div class="x">※' + esc(n) + '</div>').join('');
+    } else {
+      quote = null;
+      box.className = 'cpres ng';
+      box.innerHTML = (j.notes.length ? j.notes.map(n => esc(n)).join('<br>') : 'このコードは適用されませんでした') +
+        (j.friend ? '<div class="x">LINEお友達価格はそのまま適用されます</div>' : '');
+    }
+    renderPrices();
+  } catch (e) { box.className = 'cpres ng'; box.textContent = e.message; }
+  finally { b.disabled = false; b.textContent = '適用'; }
 }
 // 公演ごとの見た目（公演名に含まれる文字で判定）
 const THEMES = [{
@@ -406,11 +445,16 @@ async function submit() {
     renderConcert(); renderPrices();
   }
   document.querySelectorAll('.qty button').forEach(b => b.addEventListener('click', () => {
-    const o = $(b.dataset.q); o.value = Math.max(0, Math.min(10, +o.value + +b.dataset.d)); renderPrices();
+    const o = $(b.dataset.q); o.value = Math.max(0, Math.min(10, +o.value + +b.dataset.d));
+    if (!$('cpRes').classList.contains('hide') && $('coupon').value.trim()) { quote = null; renderPrices(); applyCoupon(); } else renderPrices();
   }));
   $('concert').addEventListener('change', renderConcert);
   document.querySelectorAll('input[name=pay]').forEach(r => r.addEventListener('change', renderPayNote));
   $('submit').addEventListener('click', submit);
+  $('cpBtn').addEventListener('click', applyCoupon);
+  $('coupon').addEventListener('input', clearQuote);
+  $('coupon').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } });
+  $('concert').addEventListener('change', clearQuote);
   $('tabBook').addEventListener('click', () => show('book'));
   $('tabMine').addEventListener('click', () => { show('mine'); loadTickets(); });
   $('toMine').addEventListener('click', () => { show('mine'); loadTickets(); });
