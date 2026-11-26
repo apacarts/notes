@@ -378,7 +378,7 @@ async function shareSeat(t, s, url) {
           { type: 'text', text: t.date, wrap: true, size: 'xs', color: '#666666' },
           { type: 'text', text: s.kind + '・1名', size: 'sm', margin: 'md' },
           { type: 'text', text: '当日はQRコードを受付でご提示ください。', wrap: true, size: 'xs', color: '#666666' }] },
-        footer: { type: 'box', layout: 'vertical', contents: [{ type: 'button', style: 'primary', color: '#e8792e', action: { type: 'uri', label: 'チケットを表示', uri: url } }] } } }]);
+        footer: { type: 'box', layout: 'vertical', contents: [{ type: 'button', style: 'primary', color: '#e8792e', action: { type: 'uri', label: 'チケットを表示', uri: url } }] } } }], { isMultiple: false });   // 1枚のチケットは1人にだけ送る
       if (res && res.status === 'success') return true;
       return false;   // キャンセル
     }
