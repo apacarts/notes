@@ -39,6 +39,12 @@ input,select,textarea{width:100%;font-size:16px;padding:11px 12px;border:1px sol
 .btn.sub{background:#fff;color:var(--od);border:1px solid var(--o)}
 .err{color:#b3261e;font-size:14px;margin-top:10px;white-space:pre-line}
 .muted{color:var(--sub);font-size:13px}
+.split{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;text-align:left}
+.split summary{font-weight:700;cursor:pointer;padding:6px 0}
+.seat{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.seat .n{flex:1;font-size:14px}
+.seat button{border:1px solid var(--o);background:transparent;color:var(--o);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700}
+.seat .used{color:var(--sub);font-size:13px}
 .ticket{border:2px solid var(--o);border-radius:14px;padding:16px;margin-bottom:14px;background:#fff;text-align:center}
 .ticket .code{font-size:26px;font-weight:800;letter-spacing:.08em}
 .ticket .qr{display:flex;justify-content:center;margin:10px 0}
@@ -259,6 +265,7 @@ async function loadTickets(fresh) {
         const q = qrcode(0, 'M'); q.addData(t.qr); q.make();
         d.querySelector('.qr').innerHTML = q.createImgTag(6, 8, 'QRコード');
         const p = document.createElement('p'); p.className = 'muted'; p.textContent = '当日はこのQRコードを受付でご提示ください。'; d.appendChild(p);
+        if (t.seats && t.seats.length) d.appendChild(splitBox(t));
       } else {
         d.querySelector('.qr').remove();
         const a = document.createElement('a'); a.className = 'btn'; a.textContent = yen(t.total) + ' を支払う'; a.href = t.payUrl;
@@ -269,6 +276,47 @@ async function loadTickets(fresh) {
       $('tickets').appendChild(d);
     });
   } catch (e) { $('tickets').innerHTML = ''; const p = document.createElement('p'); p.className = 'err'; p.textContent = e.message; $('tickets').appendChild(p); }
+}
+
+// 複数枚のチケットを1枚ずつ同行者に送る
+function splitBox(t) {
+  const box = document.createElement('details'); box.className = 'split';
+  box.innerHTML = '<summary>チケットを分ける（同行の方に1枚ずつ送る）</summary><p class="muted">別々に来場される方へ、1枚分のQRコードを送れます。受け取った方はLINEを使っていなくても表示できます。お手元のQRコードは、残りの枚数分としてそのまま使えます。</p>';
+  t.seats.forEach(s => {
+    const row = document.createElement('div'); row.className = 'seat';
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = s.seat + '枚目（' + s.kind + '）'; row.appendChild(n);
+    if (s.used) { const u = document.createElement('span'); u.className = 'used'; u.textContent = '入場済み'; row.appendChild(u); }
+    else {
+      const b1 = document.createElement('button'); b1.type = 'button'; b1.textContent = 'LINEで送る';
+      b1.addEventListener('click', () => shareSeat(t, s));
+      const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = 'リンクをコピー';
+      b2.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(s.url); b2.textContent = 'コピーしました'; }
+        catch (e) { prompt('このリンクを送ってください', s.url); }
+      });
+      row.appendChild(b1); row.appendChild(b2);
+    }
+    box.appendChild(row);
+  });
+  return box;
+}
+async function shareSeat(t, s) {
+  const text = t.title + '\n' + t.date + '\nチケット（' + s.kind + '・1名）をお送りします。当日はこのページのQRコードを受付でご提示ください。\n' + s.url;
+  try {
+    if (liff.isApiAvailable('shareTargetPicker')) {
+      await liff.shareTargetPicker([{ type: 'flex', altText: 'チケットが届きました', contents: {
+        type: 'bubble',
+        header: { type: 'box', layout: 'vertical', backgroundColor: '#e8792e', contents: [{ type: 'text', text: 'チケットが届きました', color: '#ffffff', weight: 'bold' }] },
+        body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
+          { type: 'text', text: t.title, wrap: true, weight: 'bold', size: 'sm' },
+          { type: 'text', text: t.date, wrap: true, size: 'xs', color: '#666666' },
+          { type: 'text', text: s.kind + '・1名', size: 'sm', margin: 'md' },
+          { type: 'text', text: '当日はQRコードを受付でご提示ください。', wrap: true, size: 'xs', color: '#666666' }] },
+        footer: { type: 'box', layout: 'vertical', contents: [{ type: 'button', style: 'primary', color: '#e8792e', action: { type: 'uri', label: 'チケットを表示', uri: s.url } }] } } }]);
+      return;   // 送信またはキャンセル
+    }
+  } catch (e) { /* 使えない場合は下の方法で送る */ }
+  liff.openWindow({ url: 'https://line.me/R/share?text=' + encodeURIComponent(text), external: false });
 }
 
 async function submit() {

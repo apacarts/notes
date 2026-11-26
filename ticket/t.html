@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>チケット｜OPEN TICKET</title>
+<link rel="icon" href="icon.png">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+:root{--o:#e8792e;--ink:#1d1d1f;--sub:#5f6368;--line:#e6e6e6;--bg:#faf7f3;--card:#fff}
+body.tfo{--o:#d4ac55;--ink:#f3ede0;--sub:#b8b09f;--line:#2b3448;--bg:#0b1020;--card:#141c2f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.6}
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+header img{width:30px;height:30px;border-radius:7px}
+header b{font-size:15px;letter-spacing:.04em}
+main{max-width:440px;margin:0 auto;padding:18px 16px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;text-align:center}
+.kind{display:inline-block;background:var(--o);color:#fff;border-radius:999px;padding:3px 14px;font-weight:700;font-size:14px}
+body.tfo .kind{color:#1a1405}
+.t{font-weight:700;font-size:17px;margin:12px 0 4px}
+.muted{color:var(--sub);font-size:13px}
+.qr{display:flex;justify-content:center;margin:16px 0 8px}
+.qr img{width:240px;height:240px;image-rendering:pixelated;background:#fff;padding:8px;border-radius:8px}
+.code{font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em;font-size:14px}
+.used{font-size:20px;font-weight:700;margin:24px 0;color:var(--sub)}
+.err{color:#c0392b;text-align:center;margin-top:30px}
+</style>
+</head>
+<body>
+<header><img src="icon.png" alt=""><b>OPEN TICKET</b></header>
+<main>
+  <p class="muted" id="loading" style="text-align:center">読み込み中…</p>
+  <div class="card" id="card" hidden>
+    <span class="kind" id="kind"></span>
+    <div class="t" id="title"></div>
+    <div class="muted" id="date"></div>
+    <div class="muted" id="venue"></div>
+    <div class="qr" id="qr"></div>
+    <div class="code" id="code"></div>
+    <p class="muted" id="note">当日はこのQRコードを受付でご提示ください（1名様分）。<br>このページをブックマークするか、スクリーンショットを保存しておくと便利です。</p>
+  </div>
+  <p class="err" id="err" hidden></p>
+</main>
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbyfPfw8czu3BT_wJT5XQD62FNm5blg5q_uKA4fryOAPfJ7y3yg-Zt2xXxiWUhqaCOOQiA/exec';
+const $ = id => document.getElementById(id);
+(async () => {
+  const c = new URLSearchParams(location.search).get('c') || '';
+  try {
+    const r = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'shared', c: c }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || '読み込めませんでした');
+    if (j.title.indexOf('東京ファンファーレオーケストラ') >= 0) document.body.classList.add('tfo');
+    $('kind').textContent = j.kind + '・1名';
+    $('title').textContent = j.title;
+    $('date').textContent = j.date;
+    $('venue').textContent = j.venue;
+    $('code').textContent = j.code;
+    if (j.used || j.allIn) {
+      $('qr').outerHTML = '<div class="used">このチケットは入場済みです</div>';
+      $('note').hidden = true;
+    } else {
+      const q = qrcode(0, 'M'); q.addData(j.qr); q.make();
+      $('qr').innerHTML = q.createImgTag(6, 8, 'QRコード');
+      if (j.kind === 'Under25') $('note').innerHTML += '<br>Under25のため、当日は年齢がわかる身分証をお持ちください。';
+    }
+    $('card').hidden = false;
+  } catch (e) {
+    $('err').textContent = e.message; $('err').hidden = false;
+  } finally { $('loading').hidden = true; }
+})();
+</script>
+</body>
+</html>
