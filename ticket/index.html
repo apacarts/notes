@@ -45,6 +45,9 @@ input,select,textarea{width:100%;font-size:16px;padding:11px 12px;border:1px sol
 .seat .n{flex:1;font-size:14px}
 .seat button{border:1px solid var(--o);background:transparent;color:var(--o);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700}
 .seat .used{color:var(--sub);font-size:13px}
+.seat button.main{background:var(--o);color:#fff;border-color:var(--o)}
+body.tfo .seat button.main{color:#1a1405}
+.seat button.link{border:0;padding:7px 4px;font-weight:400;text-decoration:underline;color:var(--sub)}
 .ticket{border:2px solid var(--o);border-radius:14px;padding:16px;margin-bottom:14px;background:#fff;text-align:center}
 .ticket .code{font-size:26px;font-weight:800;letter-spacing:.08em}
 .ticket .qr{display:flex;justify-content:center;margin:10px 0}
@@ -281,15 +284,15 @@ async function loadTickets(fresh) {
 // 複数枚のチケットを1枚ずつ同行者に送る
 function splitBox(t) {
   const box = document.createElement('details'); box.className = 'split';
-  box.innerHTML = '<summary>チケットを分ける（同行の方に1枚ずつ送る）</summary><p class="muted">別々に来場される方へ、1枚分のQRコードを送れます。受け取った方はLINEを使っていなくても表示できます。お手元のQRコードは、残りの枚数分としてそのまま使えます。</p>';
+  box.innerHTML = '<summary>チケットを分ける（LINE友だちに1枚ずつ送る）</summary><p class="muted">別々に来場される方へ、1枚分のQRコードをLINEで送れます。LINEを使っていない方には「リンクをコピー」でメールなどからお送りください。お手元のQRコードは、残りの枚数分としてそのまま使えます。</p>';
   t.seats.forEach(s => {
     const row = document.createElement('div'); row.className = 'seat';
     const n = document.createElement('span'); n.className = 'n'; n.textContent = s.seat + '枚目（' + s.kind + '）'; row.appendChild(n);
     if (s.used) { const u = document.createElement('span'); u.className = 'used'; u.textContent = '入場済み'; row.appendChild(u); }
     else {
-      const b1 = document.createElement('button'); b1.type = 'button'; b1.textContent = 'LINEで送る';
+      const b1 = document.createElement('button'); b1.type = 'button'; b1.textContent = 'LINE友だちに送る'; b1.className = 'main';
       b1.addEventListener('click', () => shareSeat(t, s));
-      const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = 'リンクをコピー';
+      const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = 'リンクをコピー'; b2.className = 'link';
       b2.addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(s.url); b2.textContent = 'コピーしました'; }
         catch (e) { prompt('このリンクを送ってください', s.url); }
