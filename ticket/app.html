@@ -144,7 +144,7 @@ body.tfo .hero{display:block;margin:-16px -16px 14px;position:relative;backgroun
       <h2>お客様情報</h2>
       <label for="name">お名前</label><input id="name" autocomplete="name">
       <label for="kana">フリガナ</label><input id="kana">
-      <label for="email">メールアドレス <span class="hint">確認メールをお送りします</span></label><input id="email" type="email" autocomplete="email" inputmode="email">
+      <label for="email">メールアドレス <span class="hint">ご連絡用（チケットや案内はLINEに届きます）</span></label><input id="email" type="email" autocomplete="email" inputmode="email">
       <label for="tel">電話番号</label><input id="tel" type="tel" autocomplete="tel" inputmode="tel">
       <label for="refName">ご紹介者のお名前 <span class="hint">出演者からのご紹介の方のみ</span></label><input id="refName">
       <label for="note">備考</label><textarea id="note" rows="2"></textarea>
@@ -283,7 +283,7 @@ function renderPayNote() {
   const pay = document.querySelector('input[name=pay]:checked').value;
   $('payNote').textContent = pay === 'card'
     ? '申し込み後に表示される画面からお支払いください。お支払いが完了すると、QRコード付きのチケットがLINEに届きます。'
-    : '申し込みから5日以内にお振り込みください。振込先はメールでお知らせします。チケットはすぐにLINEに届きます。';
+    : '申し込みから5日以内にお振り込みください。振込先とチケットはすぐにLINEに届きます。';
 }
 
 let ticketsP = null;
@@ -424,7 +424,7 @@ async function submit() {
     } else {
       $('payBtn').classList.add('hide');
       $('doneText').textContent = j.pay === '銀行振込'
-        ? 'お支払い金額は ' + yen(j.total) + ' です。' + (j.deadline ? j.deadline + 'までに' : '') + 'お振り込みください。振込先はメールでお知らせしました。チケットはLINEとマイチケットでご確認いただけます。'
+        ? 'お支払い金額は ' + yen(j.total) + ' です。' + (j.deadline ? j.deadline + 'までに' : '') + 'お振り込みください。振込先はLINEのトークに送りました。チケットはLINEとマイチケットでご確認いただけます。'
         : 'チケットはLINEとマイチケットでご確認いただけます。当日はお支払いが不要です。';
     }
     show('done'); fetchTickets();
