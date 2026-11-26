@@ -177,14 +177,18 @@ function show(id) { ['book', 'done', 'mine'].forEach(s => $(s).classList.toggle(
 function fatal(msg) { $('loading').classList.add('hide'); $('fatal').textContent = msg; $('fatal').classList.remove('hide'); }
 
 let isFriend = null;
-function lineOff() { return isFriend === false ? 0 : (info.lineOff == null ? 500 : info.lineOff); }
+function offA() { return isFriend === false ? 0 : (info.lineOff == null ? 500 : info.lineOff); }
+function offU() { return isFriend === false ? 0 : (info.lineOffU25 == null ? 500 : info.lineOffU25); }
+function lineOff() { return offA(); }
+function priceHtml(base, off) { return off ? '<s>' + yen(base) + '</s> <b style="color:var(--o)">LINEお友達価格 ' + yen(base - off) + '</b>' : yen(base); }
 function renderPrices() {
-  const a = +$('adult').value, u = +$('u25').value, off = lineOff();
-  $('pA').innerHTML = off ? '<s>' + yen(info.priceAdult) + '</s> <b style="color:var(--o)">LINEお友達価格 ' + yen(info.priceAdult - off) + '</b>' : yen(info.priceAdult);
-  $('sum').textContent = yen(a * (info.priceAdult - off) + u * info.priceU25);
+  const a = +$('adult').value, u = +$('u25').value;
+  $('pA').innerHTML = priceHtml(info.priceAdult, offA());
+  $('pU').innerHTML = priceHtml(info.priceU25, offU());
+  $('sum').textContent = yen(a * (info.priceAdult - offA()) + u * (info.priceU25 - offU()));
   const n = $('friendNote');
   if (isFriend === false) {
-    n.innerHTML = '公式LINE（@apacarts）をお友達追加すると、一般券が1枚につき' + yen(info.lineOff == null ? 500 : info.lineOff) + '引きになります。<a href="https://line.me/R/ti/p/@apacarts">お友達追加はこちら</a>（追加後にこの画面を開き直してください）';
+    n.innerHTML = '公式LINE（@apacarts）をお友達追加すると、チケットが1枚につき' + yen(info.lineOff == null ? 500 : info.lineOff) + '引きになります。<a href="https://line.me/R/ti/p/@apacarts">お友達追加はこちら</a>（追加後にこの画面を開き直してください）';
     n.classList.remove('hide');
   } else n.classList.add('hide');
 }
@@ -320,7 +324,6 @@ async function submit() {
     $('book').innerHTML = '<div class="card center"><h2>ただいま受付中の公演はありません</h2><p class="muted">マイチケットから、お申し込み済みのチケットをご確認いただけます。</p></div>';
   } else {
     info.concerts.forEach(c => { const o = document.createElement('option'); o.value = c.value; o.textContent = c.title; $('concert').appendChild(o); });
-    $('pU').textContent = yen(info.priceU25);
     try { liff.getFriendship().then(f => { isFriend = !!(f && f.friendFlag); renderPrices(); }).catch(() => {}); } catch (e) {}
     try { const p = await liff.getProfile(); if (p && p.displayName && !$('name').value) $('name').placeholder = p.displayName; } catch (e) {}
     renderConcert(); renderPrices();
