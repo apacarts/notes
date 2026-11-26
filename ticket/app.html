@@ -44,6 +44,7 @@ input,select,textarea{width:100%;font-size:16px;padding:11px 12px;border:1px sol
 .cprow button{flex:none;border:0;border-radius:10px;background:var(--o);color:#fff;font-weight:700;font-size:15px;padding:0 18px}
 body.tfo .cprow button{color:#1a1405}
 .cprow button:disabled{opacity:.5}
+.opt.off{opacity:.35;pointer-events:none}
 .cpres{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(26,156,91,.1);font-size:14px}
 .cpres.ng{background:rgba(192,57,43,.1)}
 .cpres .h{font-weight:700;margin-bottom:4px}
@@ -152,7 +153,7 @@ body.tfo .hero{display:block;margin:-16px -16px 14px;position:relative;backgroun
 
     <div class="card">
       <h2>お支払い方法</h2>
-      <div class="opt">
+      <div class="opt" id="payOpts">
         <label><input type="radio" name="pay" value="card" checked> カード・電子決済</label>
         <label id="bankOpt"><input type="radio" name="pay" value="bank"> 銀行振込</label>
       </div>
@@ -208,6 +209,7 @@ function renderPrices() {
   $('pU').innerHTML = priceHtml(info.priceU25, offU());
   $('sum').textContent = yen(quote ? quote.total : a * (info.priceAdult - offA()) + u * (info.priceU25 - offU()));
   $('sumLabel').textContent = quote && quote.applied ? '合計（クーポン適用後）' : '合計';
+  if ($('payOpts')) renderPayNote();
   const n = $('friendNote');
   if (isFriend === false) {
     n.innerHTML = '公式LINE（@apacarts）をお友達追加すると、チケットが1枚につき' + yen(info.lineOff == null ? 500 : info.lineOff) + '引きになります。<a href="https://line.me/R/ti/p/@apacarts">お友達追加はこちら</a>（追加後にこの画面を開き直してください）';
@@ -279,7 +281,13 @@ function renderConcert() {
   if (!c || !c.bankOk) document.querySelector('input[name=pay][value=card]').checked = true;
   renderPayNote();
 }
+function isFree() { return !!(quote && quote.applied && quote.total === 0); }
 function renderPayNote() {
+  // 合計¥0（招待コードなど）のときは、支払い方法を選ばなくてよい
+  const free = isFree();
+  $('payOpts').classList.toggle('off', free);
+  document.querySelectorAll('input[name=pay]').forEach(r => { r.disabled = free; });
+  if (free) { $('payNote').textContent = '合計¥0のため、お支払いは不要です。申し込むとすぐにQRチケットがLINEに届きます。'; return; }
   const pay = document.querySelector('input[name=pay]:checked').value;
   $('payNote').textContent = pay === 'card'
     ? '申し込み後に表示される画面からお支払いください。お支払いが完了すると、QRコード付きのチケットがLINEに届きます。'
