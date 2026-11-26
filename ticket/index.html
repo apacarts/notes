@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>OPEN TICKET</title>
+<link rel="icon" href="icon.png">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+:root{--o:#e8792e;--od:#c95f17;--ink:#1d1d1f;--sub:#5f6368;--line:#e6e6e6;--bg:#faf7f3}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;-webkit-text-size-adjust:100%}
+header{background:var(--o);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:10px}
+header img{width:32px;height:32px;border-radius:8px}
+header b{font-size:17px;letter-spacing:.06em}
+nav{display:flex;background:#fff;border-bottom:1px solid var(--line)}
+nav button{flex:1;border:0;background:none;padding:12px;font-size:15px;color:var(--sub);border-bottom:3px solid transparent}
+nav button.on{color:var(--od);border-bottom-color:var(--o);font-weight:700}
+main{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+h2{font-size:16px;margin:0 0 10px}
+label{display:block;font-size:14px;font-weight:600;margin:12px 0 6px}
+.hint{font-size:12px;color:var(--sub);font-weight:400}
+input,select,textarea{width:100%;font-size:16px;padding:11px 12px;border:1px solid #cfcfcf;border-radius:10px;background:#fff;color:var(--ink)}
+.row{display:flex;gap:10px}.row>div{flex:1}
+.qty{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+.qty:last-child{border-bottom:0}
+.qty .n{display:flex;align-items:center;gap:12px}
+.qty button{width:40px;height:40px;border-radius:50%;border:1px solid var(--o);background:#fff;color:var(--od);font-size:20px}
+.qty output{min-width:24px;text-align:center;font-size:18px;font-weight:700}
+.opt{display:flex;gap:8px;flex-wrap:wrap}
+.opt label{flex:1;min-width:140px;margin:0;border:1px solid #cfcfcf;border-radius:10px;padding:11px;font-weight:500;display:flex;gap:8px;align-items:center}
+.opt input{width:auto}
+.total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin-top:6px}
+.btn{display:block;width:100%;border:0;border-radius:12px;background:var(--o);color:#fff;font-size:17px;font-weight:700;padding:15px;margin-top:14px;text-decoration:none;text-align:center;min-height:48px}
+.btn:disabled{background:#d9b79c}
+.btn.sub{background:#fff;color:var(--od);border:1px solid var(--o)}
+.err{color:#b3261e;font-size:14px;margin-top:10px;white-space:pre-line}
+.muted{color:var(--sub);font-size:13px}
+.ticket{border:2px solid var(--o);border-radius:14px;padding:16px;margin-bottom:14px;background:#fff;text-align:center}
+.ticket .code{font-size:26px;font-weight:800;letter-spacing:.08em}
+.ticket .qr{display:flex;justify-content:center;margin:10px 0}
+.ticket .qr img{width:220px;height:220px;image-rendering:pixelated}
+.badge{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;background:#fdeee3;color:var(--od);font-weight:700}
+.hide{display:none}
+.center{text-align:center}
+</style>
+</head>
+<body>
+<header><img src="icon.png" alt=""><b>OPEN TICKET</b><span style="margin-left:auto;font-size:12px;opacity:.9">APAC ARTS PROMOTION</span></header>
+<nav><button id="tabBook" class="on" type="button">チケットを申し込む</button><button id="tabMine" type="button">マイチケット</button></nav>
+<main>
+  <div id="loading" class="center muted" style="padding:40px 0">読み込み中…</div>
+  <div id="fatal" class="card err hide"></div>
+
+  <section id="book" class="hide">
+    <div class="card">
+      <h2>公演</h2>
+      <select id="concert" aria-label="公演"></select>
+      <p id="concertInfo" class="muted" style="margin:8px 0 0"></p>
+    </div>
+
+    <div class="card">
+      <h2>枚数</h2>
+      <div class="qty"><div>一般<br><span class="muted" id="pA"></span></div><div class="n"><button type="button" aria-label="一般を減らす" data-q="adult" data-d="-1">−</button><output id="adult">1</output><button type="button" aria-label="一般を増やす" data-q="adult" data-d="1">＋</button></div></div>
+      <div class="qty"><div>Under25<br><span class="muted"><span id="pU"></span>（25歳以下・当日身分証提示）</span></div><div class="n"><button type="button" aria-label="Under25を減らす" data-q="u25" data-d="-1">−</button><output id="u25">0</output><button type="button" aria-label="Under25を増やす" data-q="u25" data-d="1">＋</button></div></div>
+      <div class="total"><span>合計（割引前）</span><span id="sum"></span></div>
+      <label for="coupon">クーポンコード <span class="hint">お持ちの方のみ</span></label>
+      <input id="coupon" autocomplete="off" autocapitalize="characters">
+    </div>
+
+    <div class="card">
+      <h2>お客様情報</h2>
+      <label for="name">お名前</label><input id="name" autocomplete="name">
+      <label for="kana">フリガナ</label><input id="kana">
+      <label for="email">メールアドレス <span class="hint">確認メールをお送りします</span></label><input id="email" type="email" autocomplete="email" inputmode="email">
+      <label for="tel">電話番号</label><input id="tel" type="tel" autocomplete="tel" inputmode="tel">
+      <label for="refName">ご紹介者のお名前 <span class="hint">出演者からのご紹介の方のみ</span></label><input id="refName">
+      <label for="note">備考</label><textarea id="note" rows="2"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>お支払い方法</h2>
+      <div class="opt">
+        <label><input type="radio" name="pay" value="card" checked> カード・電子決済</label>
+        <label id="bankOpt"><input type="radio" name="pay" value="bank"> 銀行振込</label>
+      </div>
+      <p class="muted" id="payNote" style="margin:8px 0 0"></p>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-weight:500;margin-top:14px"><input type="checkbox" id="agree" style="width:auto;margin-top:5px"> <span>Under25は当日身分証の提示が必要なこと、<a href="https://apacarts.com/tokushoho" target="_blank">特定商取引法に基づく表記</a>と<a href="https://apacarts.com/about-aap" target="_blank">プライバシーポリシー</a>を確認しました</span></label>
+      <button class="btn" id="submit" type="button">申し込む</button>
+      <div class="err" id="err" role="alert"></div>
+    </div>
+  </section>
+
+  <section id="done" class="hide">
+    <div class="card center">
+      <h2>お申し込みを受け付けました</h2>
+      <p>予約コード</p>
+      <p class="ticket code" id="doneCode" style="border:0;margin:0;padding:0"></p>
+      <p id="doneText"></p>
+      <a class="btn" id="payBtn" href="#">お支払いへ進む</a>
+      <button class="btn sub" id="toMine" type="button">マイチケットを見る</button>
+    </div>
+  </section>
+
+  <section id="mine" class="hide">
+    <div id="tickets"></div>
+    <p class="muted center" id="noTickets">まだチケットはありません。</p>
+  </section>
+</main>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbyfPfw8czu3BT_wJT5XQD62FNm5blg5q_uKA4fryOAPfJ7y3yg-Zt2xXxiWUhqaCOOQiA/exec';
+const LIFF = { dev: '2012819154-WshT5m1S', prod: '2012819156-H7mHfqdW' };
+const $ = id => document.getElementById(id);
+const yen = n => '¥' + Number(n).toLocaleString('ja-JP');
+let info = null, sending = false;
+
+async function api(body) {
+  const r = await fetch(API, { method: 'POST', body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || '通信に失敗しました');
+  return j;
+}
+function token() { return liff.getIDToken(); }
+function show(id) { ['book', 'done', 'mine'].forEach(s => $(s).classList.toggle('hide', s !== id)); $('tabBook').classList.toggle('on', id !== 'mine'); $('tabMine').classList.toggle('on', id === 'mine'); }
+function fatal(msg) { $('loading').classList.add('hide'); $('fatal').textContent = msg; $('fatal').classList.remove('hide'); }
+
+function renderPrices() {
+  const a = +$('adult').value, u = +$('u25').value;
+  $('sum').textContent = yen(a * info.priceAdult + u * info.priceU25);
+}
+function renderConcert() {
+  const c = info.concerts.find(x => x.value === $('concert').value) || info.concerts[0];
+  $('concertInfo').textContent = c ? c.date + '\n' + info.venue : '';
+  $('concertInfo').style.whiteSpace = 'pre-line';
+  $('bankOpt').classList.toggle('hide', !c || !c.bankOk);
+  if (!c || !c.bankOk) document.querySelector('input[name=pay][value=card]').checked = true;
+  renderPayNote();
+}
+function renderPayNote() {
+  const pay = document.querySelector('input[name=pay]:checked').value;
+  $('payNote').textContent = pay === 'card'
+    ? '申し込み後に表示される画面からお支払いください。お支払いが完了すると、QRコード付きのチケットがLINEに届きます。'
+    : '申し込みから5日以内にお振り込みください。振込先はメールでお知らせします。チケットはすぐにLINEに届きます。';
+}
+
+async function loadTickets() {
+  $('tickets').innerHTML = '<p class="muted center">読み込み中…</p>';
+  try {
+    const j = await api({ action: 'tickets', idToken: token() });
+    $('tickets').innerHTML = '';
+    $('noTickets').classList.toggle('hide', j.tickets.length > 0);
+    j.tickets.forEach(t => {
+      const d = document.createElement('div'); d.className = 'ticket';
+      const kinds = [t.adult ? '一般 ' + t.adult + '枚' : '', t.u25 ? 'Under25 ' + t.u25 + '枚' : ''].filter(Boolean).join('／');
+      const status = t.pay === 'カード' ? (t.paid ? 'お支払い済み' : 'お支払い待ち') : t.pay === '銀行振込' ? (t.paid ? '入金済み' : '振込待ち') : t.pay;
+      d.innerHTML = '<span class="badge"></span><div class="code"></div><div class="qr"></div><div class="t"></div><div class="muted d"></div><div class="muted k"></div>';
+      d.querySelector('.badge').textContent = status;
+      d.querySelector('.code').textContent = t.code;
+      d.querySelector('.t').textContent = t.title;
+      d.querySelector('.d').textContent = t.date;
+      d.querySelector('.k').textContent = kinds + '　' + yen(t.total);
+      if (t.showQr) {
+        const q = qrcode(0, 'M'); q.addData(t.qr); q.make();
+        d.querySelector('.qr').innerHTML = q.createImgTag(6, 8, 'QRコード');
+        const p = document.createElement('p'); p.className = 'muted'; p.textContent = '当日はこのQRコードを受付でご提示ください。'; d.appendChild(p);
+      } else {
+        d.querySelector('.qr').remove();
+        const a = document.createElement('a'); a.className = 'btn'; a.textContent = yen(t.total) + ' を支払う'; a.href = t.payUrl;
+        a.addEventListener('click', ev => { ev.preventDefault(); liff.openWindow({ url: t.payUrl, external: false }); });
+        d.appendChild(a);
+        const p = document.createElement('p'); p.className = 'muted'; p.textContent = 'お支払いが完了すると、ここにQRコードが表示されます。'; d.appendChild(p);
+      }
+      $('tickets').appendChild(d);
+    });
+  } catch (e) { $('tickets').innerHTML = ''; const p = document.createElement('p'); p.className = 'err'; p.textContent = e.message; $('tickets').appendChild(p); }
+}
+
+async function submit() {
+  if (sending) return;
+  $('err').textContent = '';
+  const v = id => $(id).value.trim();
+  const errs = [];
+  if (+$('adult').value + +$('u25').value === 0) errs.push('枚数を選んでください');
+  if (!v('name')) errs.push('お名前を入力してください');
+  if (!v('kana')) errs.push('フリガナを入力してください');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('email'))) errs.push('メールアドレスをご確認ください');
+  if (!$('agree').checked) errs.push('確認事項にチェックを入れてください');
+  if (errs.length) { $('err').textContent = errs.join('\n'); return; }
+  sending = true; $('submit').disabled = true; $('submit').textContent = '送信中…';
+  try {
+    const j = await api({
+      action: 'book', idToken: token(), concert: $('concert').value,
+      adult: +$('adult').value, u25: +$('u25').value, coupon: v('coupon'),
+      name: v('name'), kana: v('kana'), email: v('email'), tel: v('tel'), refName: v('refName'), note: v('note'),
+      pay: document.querySelector('input[name=pay]:checked').value,
+    });
+    $('doneCode').textContent = j.code;
+    if (j.pay === 'カード' && j.payUrl) {
+      $('doneText').textContent = 'お支払い金額は ' + yen(j.total) + ' です。下のボタンからお支払いください。完了すると、QRコード付きのチケットがLINEに届きます。';
+      $('payBtn').classList.remove('hide');
+      $('payBtn').onclick = ev => { ev.preventDefault(); liff.openWindow({ url: j.payUrl, external: false }); };
+    } else {
+      $('payBtn').classList.add('hide');
+      $('doneText').textContent = j.pay === '銀行振込'
+        ? 'お支払い金額は ' + yen(j.total) + ' です。' + (j.deadline ? j.deadline + 'までに' : '') + 'お振り込みください。振込先はメールでお知らせしました。チケットはLINEとマイチケットでご確認いただけます。'
+        : 'チケットはLINEとマイチケットでご確認いただけます。当日はお支払いが不要です。';
+    }
+    show('done');
+  } catch (e) { $('err').textContent = e.message; }
+  sending = false; $('submit').disabled = false; $('submit').textContent = '申し込む';
+}
+
+(async () => {
+  const env = new URLSearchParams(location.search).get('env') === 'dev' ? 'dev' : 'prod';
+  try {
+    await liff.init({ liffId: LIFF[env] });
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+  } catch (e) { fatal('LINEの読み込みに失敗しました。LINEアプリから開き直してください。\n' + e.message); return; }
+  try {
+    info = await api({ action: 'info' });
+  } catch (e) { fatal('受付情報を読み込めませんでした。時間をおいて開き直してください。\n' + e.message); return; }
+  $('loading').classList.add('hide');
+  if (!info.open || !info.concerts.length) {
+    $('book').innerHTML = '<div class="card center"><h2>ただいま受付中の公演はありません</h2><p class="muted">マイチケットから、お申し込み済みのチケットをご確認いただけます。</p></div>';
+  } else {
+    info.concerts.forEach(c => { const o = document.createElement('option'); o.value = c.value; o.textContent = c.title; $('concert').appendChild(o); });
+    $('pA').textContent = yen(info.priceAdult); $('pU').textContent = yen(info.priceU25);
+    try { const p = await liff.getProfile(); if (p && p.displayName && !$('name').value) $('name').placeholder = p.displayName; } catch (e) {}
+    renderConcert(); renderPrices();
+  }
+  document.querySelectorAll('.qty button').forEach(b => b.addEventListener('click', () => {
+    const o = $(b.dataset.q); o.value = Math.max(0, Math.min(10, +o.value + +b.dataset.d)); renderPrices();
+  }));
+  $('concert').addEventListener('change', renderConcert);
+  document.querySelectorAll('input[name=pay]').forEach(r => r.addEventListener('change', renderPayNote));
+  $('submit').addEventListener('click', submit);
+  $('tabBook').addEventListener('click', () => show('book'));
+  $('tabMine').addEventListener('click', () => { show('mine'); loadTickets(); });
+  $('toMine').addEventListener('click', () => { show('mine'); loadTickets(); });
+  if (new URLSearchParams(location.search).get('view') === 'tickets') { show('mine'); loadTickets(); } else show('book');
+})();
+</script>
+</body>
+</html>
