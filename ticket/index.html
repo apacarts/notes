@@ -46,17 +46,64 @@ input,select,textarea{width:100%;font-size:16px;padding:11px 12px;border:1px sol
 .badge{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;background:#fdeee3;color:var(--od);font-weight:700}
 .hide{display:none}
 .center{text-align:center}
+/* 公演ごとのデザイン：東京ファンファーレオーケストラ */
+.hero{display:none}
+body.tfo{--o:#d4ac55;--od:#8a6a22;--ink:#f3ede0;--sub:#b8b09f;--line:#2b3448;--bg:#0b1020;background:radial-gradient(ellipse at top,#1b2440 0,#0b1020 60%) fixed}
+body.tfo header{background:#0b1020;border-bottom:1px solid #2b3448;padding:12px 16px}
+body.tfo nav{background:#111829;border-bottom-color:#2b3448}
+body.tfo nav button.on{color:#e9c873}
+body.tfo .card{background:#141c2f;box-shadow:none;border:1px solid #252f46}
+body.tfo input,body.tfo select,body.tfo textarea{background:#0f1626;border-color:#36415c;color:var(--ink)}
+body.tfo .opt label{border-color:#36415c}
+body.tfo .qty button{background:transparent;color:#e9c873}
+body.tfo .btn{background:linear-gradient(#e2c06a,#c39a3f);color:#1a1405}
+body.tfo .btn:disabled{background:#5d5235;color:#b9ad8c}
+body.tfo .btn.sub{background:transparent;color:#e9c873;border-color:#d4ac55}
+body.tfo a{color:#e9c873}
+body.tfo .err{color:#ff9a8f}
+body.tfo .ticket{background:#141c2f;border-color:#d4ac55}
+body.tfo .ticket .qr{background:#fff;border-radius:10px;padding:8px;width:max-content;margin:10px auto}
+body.tfo .badge{background:#2b2618;color:#e9c873}
+body.tfo .hero{display:block;margin:-16px -16px 14px;position:relative;background:#0b1020}
+.hero img{display:block;width:100%;aspect-ratio:978/760;object-fit:cover;object-position:50% 0}
+.hero .shade{position:absolute;left:0;right:0;top:0;aspect-ratio:978/760;background:linear-gradient(180deg,rgba(11,16,32,0) 80%,#0b1020 100%);pointer-events:none}
+.hero .txt{padding:4px 16px 2px}
+.hero .ttl{font-family:"Times New Roman","Hiragino Mincho ProN","Yu Mincho",serif;font-size:26px;line-height:1.1;color:#e9c873;letter-spacing:.04em;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.hero .sub{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;color:#f3ede0;font-size:14px}
+.hero .meta{color:#f3ede0;font-size:14px;margin-top:4px}
+.tfo-badge{display:flex;align-items:center;gap:8px}
+.tfo-badge .logo{background:#f2e23c;color:#111;font-weight:900;font-size:16px;padding:3px 8px;letter-spacing:.04em;line-height:1.1}
+.tfo-badge .name{font-size:9px;line-height:1.15;letter-spacing:.12em;color:#f3ede0}
+.prog{list-style:none;padding:0;margin:0}
+.prog li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.prog li:last-child{border-bottom:0}
+.prog small{display:block;color:var(--sub);font-size:12px}
 </style>
 </head>
 <body>
-<header><img src="icon.png" alt=""><b>OPEN TICKET</b><span style="margin-left:auto;font-size:12px;opacity:.9">APAC ARTS PROMOTION</span></header>
+<header><span id="brand" style="display:flex;align-items:center;gap:10px"><img src="icon.png" alt=""><b>OPEN TICKET</b></span><span id="brandSub" style="margin-left:auto;font-size:12px;opacity:.9">APAC ARTS PROMOTION</span></header>
 <nav><button id="tabBook" class="on" type="button">チケットを申し込む</button><button id="tabMine" type="button">マイチケット</button></nav>
 <main>
   <div id="loading" class="center muted" style="padding:40px 0">読み込み中…</div>
   <div id="fatal" class="card err hide"></div>
 
   <section id="book" class="hide">
-    <div class="card">
+    <div class="hero" id="hero">
+      <img id="heroImg" alt="">
+      <div class="shade"></div>
+      <div class="txt">
+        <div class="sub" id="heroPre"></div>
+        <div class="ttl" id="heroTtl"></div>
+        <div class="sub" id="heroSub"></div>
+        <div class="meta" id="heroMeta" style="white-space:pre-line"></div>
+      </div>
+    </div>
+    <div class="card hide" id="progCard">
+      <h2>プログラム</h2>
+      <ul class="prog" id="prog"></ul>
+      <p class="muted" id="progNote" style="margin:8px 0 0"></p>
+    </div>
+    <div class="card" id="concertCard">
       <h2>公演</h2>
       <select id="concert" aria-label="公演"></select>
       <p id="concertInfo" class="muted" style="margin:8px 0 0"></p>
@@ -132,8 +179,37 @@ function renderPrices() {
   const a = +$('adult').value, u = +$('u25').value;
   $('sum').textContent = yen(a * info.priceAdult + u * info.priceU25);
 }
+// 公演ごとの見た目（公演名に含まれる文字で判定）
+const THEMES = [{
+  match: '東京ファンファーレオーケストラ', cls: 'tfo',
+  img: 'https://cdn.myportfolio.com/b51528dd-2aab-4157-b79b-74a7ffb44603/d51d2871-db74-4838-a1cf-11f727144441_rw_1920.jpg?h=0719a5e71606b202b667e66fba7a4d6f',
+  pre: '東京ファンファーレオーケストラ 第14回定期演奏会', ttl: '', sub: '',
+  brand: '<span class="tfo-badge"><span class="logo">TFO</span><span class="name">TOKYO<br>FANFARE<br>ORCHESTRA</span></span>',
+  prog: [
+    ['ピーター・グレイアム：サモン・ザ・ドラゴン', 'Peter Graham: Summon the Dragon'],
+    ['ジョン・パウエル：映画《ヒックとドラゴン》より', '編曲：トン・ファン・グレーヴェンブルック（ファンファーレオーケストラ版日本初演）'],
+    ['ヨハン・デ＝メイ：交響曲第1番《指輪物語》', 'ファンファーレオーケストラ版日本初演'],
+  ],
+  progNote: '指揮：伊藤慶亮　ソロ・コンサートマスター：服部孝也　コンサートマスター：松下洋',
+}];
+function applyTheme(c) {
+  const t = c && THEMES.find(x => c.value.indexOf(x.match) >= 0);
+  document.body.className = t ? t.cls : '';
+  if (!t) { $('progCard').classList.add('hide'); $('brand').innerHTML = '<img src="icon.png" alt=""><b>OPEN TICKET</b>'; $('brandSub').textContent = 'APAC ARTS PROMOTION'; return; }
+  $('brand').innerHTML = t.brand; $('brandSub').textContent = 'チケット｜OPEN TICKET';
+  if ($('heroImg').getAttribute('src') !== t.img) $('heroImg').src = t.img;
+  $('heroImg').alt = t.pre + ' フライヤー';
+  $('heroPre').textContent = t.pre; $('heroTtl').innerHTML = t.ttl; $('heroSub').textContent = t.sub;
+  $('heroMeta').textContent = c.date + '\n' + info.venue;
+  $('prog').innerHTML = '';
+  t.prog.forEach(p => { const li = document.createElement('li'); li.textContent = p[0]; const s = document.createElement('small'); s.textContent = p[1]; li.appendChild(s); $('prog').appendChild(li); });
+  $('progNote').textContent = t.progNote;
+  $('progCard').classList.remove('hide');
+  $('concertCard').classList.toggle('hide', info.concerts.length === 1);
+}
 function renderConcert() {
   const c = info.concerts.find(x => x.value === $('concert').value) || info.concerts[0];
+  applyTheme(c);
   $('concertInfo').textContent = c ? c.date + '\n' + info.venue : '';
   $('concertInfo').style.whiteSpace = 'pre-line';
   $('bankOpt').classList.toggle('hide', !c || !c.bankOk);
