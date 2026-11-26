@@ -113,8 +113,9 @@ body.tfo .hero{display:block;margin:-16px -16px 14px;position:relative;backgroun
       <h2>枚数</h2>
       <div class="qty"><div>一般<br><span class="muted" id="pA"></span></div><div class="n"><button type="button" aria-label="一般を減らす" data-q="adult" data-d="-1">−</button><output id="adult">1</output><button type="button" aria-label="一般を増やす" data-q="adult" data-d="1">＋</button></div></div>
       <div class="qty"><div>Under25<br><span class="muted"><span id="pU"></span>（25歳以下・当日身分証提示）</span></div><div class="n"><button type="button" aria-label="Under25を減らす" data-q="u25" data-d="-1">−</button><output id="u25">0</output><button type="button" aria-label="Under25を増やす" data-q="u25" data-d="1">＋</button></div></div>
-      <div class="total"><span>合計（割引前）</span><span id="sum"></span></div>
-      <label for="coupon">クーポンコード <span class="hint">お持ちの方のみ</span></label>
+      <p class="muted hide" id="friendNote" style="margin:6px 0 0"></p>
+      <div class="total"><span id="sumLabel">合計</span><span id="sum"></span></div>
+      <label for="coupon">クーポンコード <span class="hint">お持ちの方のみ（LINEお友達割引との併用不可・お得な方を適用）</span></label>
       <input id="coupon" autocomplete="off" autocapitalize="characters">
     </div>
 
@@ -175,9 +176,17 @@ function token() { return liff.getIDToken(); }
 function show(id) { ['book', 'done', 'mine'].forEach(s => $(s).classList.toggle('hide', s !== id)); $('tabBook').classList.toggle('on', id !== 'mine'); $('tabMine').classList.toggle('on', id === 'mine'); }
 function fatal(msg) { $('loading').classList.add('hide'); $('fatal').textContent = msg; $('fatal').classList.remove('hide'); }
 
+let isFriend = null;
+function lineOff() { return isFriend === false ? 0 : (info.lineOff == null ? 500 : info.lineOff); }
 function renderPrices() {
-  const a = +$('adult').value, u = +$('u25').value;
-  $('sum').textContent = yen(a * info.priceAdult + u * info.priceU25);
+  const a = +$('adult').value, u = +$('u25').value, off = lineOff();
+  $('pA').innerHTML = off ? '<s>' + yen(info.priceAdult) + '</s> <b style="color:var(--o)">LINEお友達価格 ' + yen(info.priceAdult - off) + '</b>' : yen(info.priceAdult);
+  $('sum').textContent = yen(a * (info.priceAdult - off) + u * info.priceU25);
+  const n = $('friendNote');
+  if (isFriend === false) {
+    n.innerHTML = '公式LINE（@apacarts）をお友達追加すると、一般券が1枚につき' + yen(info.lineOff == null ? 500 : info.lineOff) + '引きになります。<a href="https://line.me/R/ti/p/@apacarts">お友達追加はこちら</a>（追加後にこの画面を開き直してください）';
+    n.classList.remove('hide');
+  } else n.classList.add('hide');
 }
 // 公演ごとの見た目（公演名に含まれる文字で判定）
 const THEMES = [{
@@ -311,7 +320,8 @@ async function submit() {
     $('book').innerHTML = '<div class="card center"><h2>ただいま受付中の公演はありません</h2><p class="muted">マイチケットから、お申し込み済みのチケットをご確認いただけます。</p></div>';
   } else {
     info.concerts.forEach(c => { const o = document.createElement('option'); o.value = c.value; o.textContent = c.title; $('concert').appendChild(o); });
-    $('pA').textContent = yen(info.priceAdult); $('pU').textContent = yen(info.priceU25);
+    $('pU').textContent = yen(info.priceU25);
+    try { liff.getFriendship().then(f => { isFriend = !!(f && f.friendFlag); renderPrices(); }).catch(() => {}); } catch (e) {}
     try { const p = await liff.getProfile(); if (p && p.displayName && !$('name').value) $('name').placeholder = p.displayName; } catch (e) {}
     renderConcert(); renderPrices();
   }
