@@ -21,7 +21,7 @@ header p{margin:2px 0 0;color:var(--sub);font-size:13px}
 #wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 svg{display:block;touch-action:pan-x pan-y}
 .seat{stroke:#fff;stroke-width:.06;cursor:pointer}
-.seat.S{fill:var(--S)}.seat.A{fill:var(--A)}.seat.B{fill:var(--B)}
+.seat.S{fill:var(--S)}.seat.A{fill:var(--A)}.seat.B{fill:var(--B)}.seat.Z{fill:var(--A)}
 .seat.x{fill:var(--sold);cursor:default}
 .seat.me{fill:var(--mine)}
 .num{font-size:.42px;text-anchor:middle;fill:#333;pointer-events:none;display:none}
@@ -52,59 +52,94 @@ svg{display:block;touch-action:pan-x pan-y}
 <div class="test">指定席の試作画面です（テスト用・実際の販売ではありません）</div>
 <header>
   <h1>座席を選ぶ</h1>
-  <p>渋谷区文化総合センター大和田 さくらホール／料金は仮のものです</p>
+  <p id="hallname"></p>
 </header>
-<div class="legend">
-  <span><i style="background:var(--S)"></i>S席 ¥5,800</span>
-  <span><i style="background:var(--A)"></i>A席 ¥4,800</span>
-  <span><i style="background:var(--B)"></i>B席 ¥3,800</span>
-  <span><i style="background:var(--sold)"></i>販売済み・確保中</span>
-  <span><i style="background:var(--mine)"></i>選択中</span>
-</div>
+<div class="legend" id="legend"></div>
 <div class="bar"><span id="left">読み込み中…</span><button id="zb" type="button">拡大する</button></div>
 <div id="wrap"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg></div>
 <div id="bought"></div>
 <div class="foot">
-  1階535席・2階172席・バルコニー22席（計729席）。車椅子席と親子室は窓口対応として除いています。<br>
+  <span id="footnote"></span><br>
+  <a id="other" href="#"></a>　／　
   <a href="#" id="reset">テストデータをすべて消す</a>
 </div>
 <div id="sheet"></div>
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbyfPfw8czu3BT_wJT5XQD62FNm5blg5q_uKA4fryOAPfJ7y3yg-Zt2xXxiWUhqaCOOQiA/exec';
-const PRICE = { S: 5800, A: 4800, B: 3800 };
 const MAX = 6;
 const NS = 'http://www.w3.org/2000/svg';
 
-// ---- 座席データ（さくらホール客席図 2017年3月版より）----
+// ---- 座席データ（ホールごと）----
 const rng = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
-const F1 = {}; // 列 → 席番号
-[1, 3].forEach(r => F1[r] = rng(1, 29));
-[2, 4].forEach(r => F1[r] = rng(1, 22).concat(rng(24, 29)));     // 中央は7〜22（半席ずれ）
-rng(5, 9).forEach(r => F1[r] = rng(1, 29));
-[10, 11].forEach(r => F1[r] = rng(3, 27));
-rng(12, 18).forEach(r => F1[r] = rng(1, 29));
-F1[19] = rng(1, 3).concat(rng(7, 23), rng(27, 29));
-const F2 = {};
-[1, 2].forEach(r => F2[r] = rng(1, 29));
-[3, 4].forEach(r => F2[r] = rng(2, 28));
-[5, 6].forEach(r => F2[r] = rng(3, 27));
-F2[7] = rng(3, 7).concat(rng(23, 27));
-
-const SEATS = []; // {id, x, y, tier}
-const x1 = n => n - 1 + (n > 6 ? 1 : 0) + (n > 23 ? 1 : 0);
-const x2 = n => n - 1 + (n > 7 ? 1 : 0) + (n > 22 ? 1 : 0);
-const y1 = r => 2.6 + (r - 1) + (r >= 10 ? 1 : 0);
-const Y2 = 27;
-const y2 = r => Y2 + (r - 1) + (r >= 3 ? 0.8 : 0);
-Object.keys(F1).forEach(r => { r = +r; F1[r].forEach(n => {
-  const mid = n >= 7 && n <= 23;
-  SEATS.push({ id: '1-' + r + '-' + n, n, x: x1(n) + ((r === 2 || r === 4) && mid ? 0.5 : 0), y: y1(r), tier: (mid && r >= 5 && r <= 15) ? 'S' : 'A' });
-}); });
-Object.keys(F2).forEach(r => { r = +r; F2[r].forEach(n => SEATS.push({ id: '2-' + r + '-' + n, n, x: x2(n), y: y2(r), tier: r <= 2 ? 'A' : 'B' })); });
-['L', 'R'].forEach(s => rng(1, 11).forEach(n => SEATS.push({ id: s + '-' + n, n, x: s === 'L' ? -2 : 32, y: 3.6 + (n - 1) + (n > 6 ? 1 : 0), tier: 'B' })));
+const HALLS = {
+  // 渋谷区文化総合センター大和田 さくらホール（客席図 2017年3月版）
+  sakura: () => {
+    const F1 = {}, F2 = {}, SEATS = [], deco = [];
+    [1, 3].forEach(r => F1[r] = rng(1, 29));
+    [2, 4].forEach(r => F1[r] = rng(1, 22).concat(rng(24, 29)));
+    rng(5, 9).forEach(r => F1[r] = rng(1, 29));
+    [10, 11].forEach(r => F1[r] = rng(3, 27));
+    rng(12, 18).forEach(r => F1[r] = rng(1, 29));
+    F1[19] = rng(1, 3).concat(rng(7, 23), rng(27, 29));
+    [1, 2].forEach(r => F2[r] = rng(1, 29));
+    [3, 4].forEach(r => F2[r] = rng(2, 28));
+    [5, 6].forEach(r => F2[r] = rng(3, 27));
+    F2[7] = rng(3, 7).concat(rng(23, 27));
+    const x1 = n => n - 1 + (n > 6 ? 1 : 0) + (n > 23 ? 1 : 0);
+    const x2 = n => n - 1 + (n > 7 ? 1 : 0) + (n > 22 ? 1 : 0);
+    const y1 = r => 2.6 + (r - 1) + (r >= 10 ? 1 : 0);
+    const Y2 = 27, y2 = r => Y2 + (r - 1) + (r >= 3 ? 0.8 : 0);
+    Object.keys(F1).forEach(r => { r = +r; F1[r].forEach(n => {
+      const mid = n >= 7 && n <= 23;
+      SEATS.push({ id: '1-' + r + '-' + n, n, x: x1(n) + ((r === 2 || r === 4) && mid ? 0.5 : 0), y: y1(r), tier: (mid && r >= 5 && r <= 15) ? 'S' : 'A', label: '1階 ' + r + '列 ' + n + '番' });
+    }); });
+    Object.keys(F2).forEach(r => { r = +r; F2[r].forEach(n => SEATS.push({ id: '2-' + r + '-' + n, n, x: x2(n), y: y2(r), tier: r <= 2 ? 'A' : 'B', label: '2階 ' + r + '列 ' + n + '番' })); });
+    ['L', 'R'].forEach(s => rng(1, 11).forEach(n => SEATS.push({ id: s + '-' + n, n, x: s === 'L' ? -2 : 32, y: 3.6 + (n - 1) + (n > 6 ? 1 : 0), tier: 'B', label: 'バルコニー ' + s + '列 ' + n + '番' })));
+    deco.push(['rect', { x: 4, y: .3, width: 23, height: 1.5, rx: .3, class: 'stage' }], ['text', { x: 15.5, y: 1.3, class: 'stagetx' }, '舞台'],
+      ['text', { x: 15.5, y: Y2 - 1.2, class: 'lab' }, '2階席'], ['text', { x: 15.5, y: 2.3, class: 'lab', style: 'font-size:.55px' }, '1階席'],
+      ['text', { x: -1.55, y: 3.2, class: 'row' }, 'L列'], ['text', { x: 32.45, y: 3.2, class: 'row' }, 'R列']);
+    Object.keys(F1).forEach(r => [6.45, 24.45].forEach(x => deco.push(['text', { x, y: y1(+r) + .65, class: 'row' }, r])));
+    Object.keys(F2).forEach(r => [7.45, 23.45].forEach(x => deco.push(['text', { x, y: y2(+r) + .65, class: 'row' }, r])));
+    [[0, y1(10)], [29, y1(10)]].forEach(p => deco.push(['rect', { x: p[0], y: p[1], width: 1.9, height: .9, rx: .15, class: 'wc' }], ['text', { x: p[0] + .95, y: p[1] + .62, class: 'row', style: 'font-size:.38px' }, '車椅子']));
+    return { name: '渋谷区文化総合センター大和田 さくらホール', SEATS, deco, VB: { x: -2.9, y: 0, w: 36.8, h: Y2 + 9 }, center: [15.5, 10],
+      tiers: { S: ['S席', 5800], A: ['A席', 4800], B: ['B席', 3800] }, priceNote: '料金は仮のものです',
+      foot: '1階535席・2階172席・バルコニー22席（計729席）。車椅子席と親子室は窓口対応として除いています。' };
+  },
+  // 住友生命いずみホール（公式座席表より。1階713席＋バルコニー108席＝821席）
+  izumi: () => {
+    const SEATS = [], deco = [];
+    const ROWS = 'ABCDEFGHJKLMNOPQRSTUVW'.split('');   // I列はありません
+    const range = { A: [2, 33], F: [2, 33], G: [2, 33], U: [2, 33], V: [3, 32], W: [12, 22] };
+    const GAP = 1.3, xs = n => n - 1 + (n > 11 ? GAP : 0) + (n > 23 ? GAP : 0), CX = (xs(1) + xs(34) + 1) / 2;
+    const Y0 = 9, ys = i => Y0 + i + (i >= 7 ? 1.2 : 0);                       // G列とH列の間に通路
+    const arc = x => 0.8 * Math.pow((x + .5 - CX) / (CX - xs(1)), 2);        // 両端ほど舞台寄りに反る
+    ROWS.forEach((L, i) => {
+      const g = range[L] || [1, 34];
+      rng(g[0], g[1]).forEach(n => { const x = xs(n) + (L === 'W' ? .5 : 0);
+        SEATS.push({ id: '1-' + (31 + i) + '-' + n, n, x, y: ys(i) - arc(x), tier: 'Z', label: '1階 ' + L + '列 ' + n + '番' }); });
+      [xs(11) + 1.15, xs(23) + 1.15].forEach(x => deco.push(['text', { x, y: ys(i) - arc(x - .5) + .68, class: 'row' }, L]));
+    });
+    // バルコニー（左：LA・LB／右：RA・RB）。LB・RBは7〜23番と26〜31番
+    const yb = n => .6 + (n - 1) * .8 + (n > 4 ? .6 : 0) + (n > 13 ? .6 : 0) + (n > 25 ? .6 : 0);
+    const bal = [['LA', -2.5, k => '2-8-' + k, rng(1, 31)], ['LB', -3.7, k => 'L-' + (40 + k), rng(7, 23).concat(rng(26, 31))],
+                 ['RA', xs(34) + 2.5, k => '2-9-' + k, rng(1, 31)], ['RB', xs(34) + 3.7, k => 'R-' + (40 + k), rng(7, 23).concat(rng(26, 31))]];
+    bal.forEach(b => { b[3].forEach(n => SEATS.push({ id: b[2](n), n, x: b[1], y: yb(n), w: .9, h: .74, tier: 'Z', label: '2階バルコニー ' + b[0] + '列 ' + n + '番' }));
+      deco.push(['text', { x: b[1] + .5, y: yb(31) + 1.7, class: 'row' }, b[0]]); });
+    deco.push(['text', { x: -2.6, y: yb(31) + 2.6, class: 'row', style: 'font-size:.42px' }, 'バルコニー'], ['text', { x: xs(34) + 3.6, y: yb(31) + 2.6, class: 'row', style: 'font-size:.42px' }, 'バルコニー']);
+    deco.push(['path', { d: 'M4 .6 H' + (xs(34) - 3) + ' V5.2 Q' + CX + ' 8.4 4 5.2 Z', class: 'stage' }], ['text', { x: CX, y: 4.6, class: 'stagetx' }, 'ステージ'],
+      ['rect', { x: CX - 4, y: .9, width: 8, height: 1.3, rx: .3, fill: '#55555a' }], ['text', { x: CX, y: 1.8, class: 'stagetx', style: 'font-size:.5px' }, 'パイプオルガン']);
+    return { name: '住友生命いずみホール', SEATS, deco, VB: { x: -4.3, y: 0, w: xs(34) + 9.6, h: ys(21) + 1.8 }, center: [CX, 14],
+      tiers: { Z: ['指定席', 2000] }, priceNote: '全席指定 ¥2,000（仮）',
+      foot: '1階713席・2階バルコニー108席（計821席）。公式の座席表どおりに並べています（I列はありません）。' };
+  },
+};
+const HALL_KEY = (new URLSearchParams(location.search).get('hall') || 'sakura').toLowerCase();
+const HALL = (HALLS[HALL_KEY] || HALLS.sakura)();
+const SEATS = HALL.SEATS, PRICE = {}, TNAME = {};
+Object.keys(HALL.tiers).forEach(k => { TNAME[k] = HALL.tiers[k][0]; PRICE[k] = HALL.tiers[k][1]; });
 const BY = {}; SEATS.forEach(s => BY[s.id] = s);
-const label = id => { const p = id.split('-'); return p.length === 3 ? p[0] + '階 ' + p[1] + '列 ' + p[2] + '番' : 'バルコニー ' + p[0] + '列 ' + p[1] + '番'; };
+const label = id => BY[id] ? BY[id].label : id;
 const yen = n => '¥' + n.toLocaleString('ja-JP');
 
 // ---- 状態 ----
@@ -123,27 +158,24 @@ async function api(op, extra) {
   return j;
 }
 function apply(j) {
-  taken = {}; j.sold.forEach(x => taken[x] = 1); j.held.forEach(x => taken[x] = 1);
+  taken = {}; j.sold.concat(j.held).forEach(x => { if (BY[x]) taken[x] = 1; });
   skew = j.now - Date.now();
-  if (j.mine.length) { picked = j.mine.slice(); until = j.until; } else if (until) { until = 0; }
+  const mine = j.mine.filter(x => BY[x]);
+  if (mine.length) { picked = mine; until = j.until; } else if (until) { until = 0; }
   picked = picked.filter(x => !taken[x]);
   paint();
 }
 
 // ---- 描画 ----
 const map = document.getElementById('map'), wrap = document.getElementById('wrap');
-const VB = { x: -2.9, y: 0, w: 36.8, h: Y2 + 9 };
+const VB = HALL.VB;
 map.setAttribute('viewBox', [VB.x, VB.y, VB.w, VB.h].join(' '));
 const el = (tag, at, txt) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; map.appendChild(e); return e; };
-el('rect', { x: 4, y: .3, width: 23, height: 1.5, rx: .3, class: 'stage' }); el('text', { x: 15.5, y: 1.3, class: 'stagetx' }, '舞台');
-el('text', { x: 15.5, y: Y2 - 1.2, class: 'lab' }, '2階席'); el('text', { x: 15.5, y: 2.3, class: 'lab', style: 'font-size:.55px' }, '1階席');
-el('text', { x: -1.55, y: 3.2, class: 'row' }, 'L列'); el('text', { x: 32.45, y: 3.2, class: 'row' }, 'R列');
-Object.keys(F1).forEach(r => { [6.45, 24.45].forEach(x => el('text', { x, y: y1(+r) + .65, class: 'row' }, r)); });
-Object.keys(F2).forEach(r => { [7.45, 23.45].forEach(x => el('text', { x, y: y2(+r) + .65, class: 'row' }, r)); });
-[[0, y1(10)], [29, y1(10)]].forEach(p => { el('rect', { x: p[0], y: p[1], width: 1.9, height: .9, rx: .15, class: 'wc' }); el('text', { x: p[0] + .95, y: p[1] + .62, class: 'row', style: 'font-size:.38px' }, '車椅子'); });
+HALL.deco.forEach(d => el(d[0], d[1], d[2]));
 SEATS.forEach(s => {
-  s.r = el('rect', { x: s.x + .05, y: s.y + .05, width: .9, height: .9, rx: .18, class: 'seat ' + s.tier, 'data-id': s.id });
-  s.t = el('text', { x: s.x + .5, y: s.y + .66, class: 'num' }, s.n);
+  const w = s.w || .9, h = s.h || .9;
+  s.r = el('rect', { x: s.x + .05, y: s.y + .05, width: w, height: h, rx: .18, class: 'seat ' + s.tier, 'data-id': s.id });
+  s.t = el('text', { x: s.x + .5, y: s.y + h * .73, class: 'num' }, s.n);
 });
 let zoomed = false;
 function setZoom(z, cx, cy) {
@@ -157,7 +189,7 @@ function setZoom(z, cx, cy) {
     window.scrollTo(0, wrap.getBoundingClientRect().top + window.scrollY + (cy / VB.h) * (w * VB.h / VB.w) - window.innerHeight / 3);
   }
 }
-document.getElementById('zb').onclick = () => setZoom(!zoomed, 15.5, 10);
+document.getElementById('zb').onclick = () => setZoom(!zoomed, HALL.center[0], HALL.center[1]);
 window.addEventListener('resize', () => setZoom(zoomed));
 map.addEventListener('click', ev => {
   if (!zoomed) { // 全体表示では、まず押した場所を拡大する
@@ -201,7 +233,7 @@ function paint() {
   on('buy', () => act('buy'));
   on('rel', () => act('release'));
   const bx = document.getElementById('bought');
-  bx.innerHTML = bought.length ? '<h2>購入済みの席（この端末）</h2>' + bought.map(x => '<div class="tk">' + label(x) + '　' + BY[x].tier + '席</div>').join('') : '';
+  bx.innerHTML = bought.filter(x => BY[x]).length ? '<h2>購入済みの席（この端末）</h2>' + bought.filter(x => BY[x]).map(x => '<div class="tk">' + label(x) + '　' + TNAME[BY[x].tier] + '</div>').join('') : '';
   tick();
 }
 function tick() {
@@ -227,10 +259,15 @@ async function act(op, extra) {
 async function refresh() { if (busy) return; try { apply(await api('state')); } catch (e) {} }
 document.getElementById('reset').onclick = async ev => {
   ev.preventDefault();
-  if (!confirm('試作のテストデータ（販売済み・確保中）をすべて消します。よろしいですか？')) return;
+  if (!confirm('試作のテストデータ（販売済み・確保中）を、両方のホール分すべて消します。よろしいですか？')) return;
   bought = []; try { localStorage.removeItem('sd_bought'); } catch (e) {}
   picked = []; until = 0; await act('reset');
 };
+document.getElementById('hallname').textContent = HALL.name + '／' + HALL.priceNote;
+document.getElementById('legend').innerHTML = Object.keys(HALL.tiers).map(k => '<span><i style="background:var(--' + (k === 'Z' ? 'A' : k) + ')"></i>' + TNAME[k] + ' ' + yen(PRICE[k]) + '</span>').join('') +
+  '<span><i style="background:var(--sold)"></i>販売済み・確保中</span><span><i style="background:var(--mine)"></i>選択中</span>';
+document.getElementById('footnote').textContent = HALL.foot;
+(o => { const iz = HALLS[HALL_KEY] && HALL_KEY === 'izumi'; o.textContent = iz ? 'さくらホール版を見る' : 'いずみホール版を見る'; o.href = iz ? 'seat.html' : 'seat.html?hall=izumi'; })(document.getElementById('other'));
 setZoom(false); paint(); refresh();
 setInterval(() => { if (!document.hidden) refresh(); }, 7000);
 </script>
