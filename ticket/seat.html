@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>OPEN TICKET 指定席（試作）</title>
+<style>
+:root{--o:#e8792e;--od:#c95f17;--ink:#1d1d1f;--sub:#5f6368;--line:#e6e6e6;--bg:#faf7f3;
+  --S:#f6c98f;--A:#bcd9f2;--B:#cfe6c4;--sold:#c9c9c9;--mine:#1f9d55}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;-webkit-text-size-adjust:100%;padding-bottom:190px}
+.test{background:#2b2b2e;color:#fff;font-size:12px;text-align:center;padding:6px 10px}
+header{padding:14px 16px 6px}
+h1{font-size:18px;margin:0}
+header p{margin:2px 0 0;color:var(--sub);font-size:13px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;padding:8px 16px;font-size:12px;color:var(--sub)}
+.legend i{display:inline-block;width:13px;height:13px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.bar{display:flex;align-items:center;gap:8px;padding:4px 16px 8px;font-size:13px;color:var(--sub)}
+.bar button{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;font-size:13px;color:var(--ink)}
+#wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+svg{display:block;touch-action:pan-x pan-y}
+.seat{stroke:#fff;stroke-width:.06;cursor:pointer}
+.seat.S{fill:var(--S)}.seat.A{fill:var(--A)}.seat.B{fill:var(--B)}
+.seat.x{fill:var(--sold);cursor:default}
+.seat.me{fill:var(--mine)}
+.num{font-size:.42px;text-anchor:middle;fill:#333;pointer-events:none;display:none}
+.zoom .num{display:block}
+.num.me{fill:#fff}.num.x{fill:#8a8a8a}
+.row{font-size:.5px;text-anchor:middle;fill:#777}
+.lab{font-size:.75px;text-anchor:middle;fill:#555;font-weight:600}
+.stage{fill:#3a3a3d}.stagetx{fill:#fff;font-size:.7px;text-anchor:middle}
+.wc{fill:none;stroke:#999;stroke-width:.05;stroke-dasharray:.12 .1}
+#sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08);padding:12px 16px calc(12px + env(safe-area-inset-bottom));max-height:60vh;overflow:auto}
+#sheet h2{font-size:14px;margin:0 0 6px}
+.pick{display:flex;justify-content:space-between;font-size:14px;padding:3px 0}
+.pick small{color:var(--sub)}
+.total{display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+.btn{display:block;width:100%;border:0;border-radius:12px;background:var(--o);color:#fff;font-size:16px;font-weight:700;padding:13px;margin-top:10px}
+.btn:disabled{background:#d8d8d8}
+.btn.sub{background:#fff;color:var(--sub);border:1px solid var(--line);font-weight:500;padding:9px;font-size:14px}
+.msg{font-size:13px;color:#b3261e;margin-top:6px}
+.ok{color:var(--mine)}
+.hint{font-size:13px;color:var(--sub)}
+.tk{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 16px;background:#fff;font-size:14px}
+#bought h2{font-size:14px;margin:14px 16px 4px}
+.foot{padding:18px 16px;font-size:12px;color:var(--sub)}
+.foot a{color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="test">指定席の試作画面です（テスト用・実際の販売ではありません）</div>
+<header>
+  <h1>座席を選ぶ</h1>
+  <p>渋谷区文化総合センター大和田 さくらホール／料金は仮のものです</p>
+</header>
+<div class="legend">
+  <span><i style="background:var(--S)"></i>S席 ¥5,800</span>
+  <span><i style="background:var(--A)"></i>A席 ¥4,800</span>
+  <span><i style="background:var(--B)"></i>B席 ¥3,800</span>
+  <span><i style="background:var(--sold)"></i>販売済み・確保中</span>
+  <span><i style="background:var(--mine)"></i>選択中</span>
+</div>
+<div class="bar"><span id="left">読み込み中…</span><button id="zb" type="button">拡大する</button></div>
+<div id="wrap"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<div id="bought"></div>
+<div class="foot">
+  1階535席・2階172席・バルコニー22席（計729席）。車椅子席と親子室は窓口対応として除いています。<br>
+  <a href="#" id="reset">テストデータをすべて消す</a>
+</div>
+<div id="sheet"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbyfPfw8czu3BT_wJT5XQD62FNm5blg5q_uKA4fryOAPfJ7y3yg-Zt2xXxiWUhqaCOOQiA/exec';
+const PRICE = { S: 5800, A: 4800, B: 3800 };
+const MAX = 6;
+const NS = 'http://www.w3.org/2000/svg';
+
+// ---- 座席データ（さくらホール客席図 2017年3月版より）----
+const rng = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+const F1 = {}; // 列 → 席番号
+[1, 3].forEach(r => F1[r] = rng(1, 29));
+[2, 4].forEach(r => F1[r] = rng(1, 22).concat(rng(24, 29)));     // 中央は7〜22（半席ずれ）
+rng(5, 9).forEach(r => F1[r] = rng(1, 29));
+[10, 11].forEach(r => F1[r] = rng(3, 27));
+rng(12, 18).forEach(r => F1[r] = rng(1, 29));
+F1[19] = rng(1, 3).concat(rng(7, 23), rng(27, 29));
+const F2 = {};
+[1, 2].forEach(r => F2[r] = rng(1, 29));
+[3, 4].forEach(r => F2[r] = rng(2, 28));
+[5, 6].forEach(r => F2[r] = rng(3, 27));
+F2[7] = rng(3, 7).concat(rng(23, 27));
+
+const SEATS = []; // {id, x, y, tier}
+const x1 = n => n - 1 + (n > 6 ? 1 : 0) + (n > 23 ? 1 : 0);
+const x2 = n => n - 1 + (n > 7 ? 1 : 0) + (n > 22 ? 1 : 0);
+const y1 = r => 2.6 + (r - 1) + (r >= 10 ? 1 : 0);
+const Y2 = 27;
+const y2 = r => Y2 + (r - 1) + (r >= 3 ? 0.8 : 0);
+Object.keys(F1).forEach(r => { r = +r; F1[r].forEach(n => {
+  const mid = n >= 7 && n <= 23;
+  SEATS.push({ id: '1-' + r + '-' + n, n, x: x1(n) + ((r === 2 || r === 4) && mid ? 0.5 : 0), y: y1(r), tier: (mid && r >= 5 && r <= 15) ? 'S' : 'A' });
+}); });
+Object.keys(F2).forEach(r => { r = +r; F2[r].forEach(n => SEATS.push({ id: '2-' + r + '-' + n, n, x: x2(n), y: y2(r), tier: r <= 2 ? 'A' : 'B' })); });
+['L', 'R'].forEach(s => rng(1, 11).forEach(n => SEATS.push({ id: s + '-' + n, n, x: s === 'L' ? -2 : 32, y: 3.6 + (n - 1) + (n > 6 ? 1 : 0), tier: 'B' })));
+const BY = {}; SEATS.forEach(s => BY[s.id] = s);
+const label = id => { const p = id.split('-'); return p.length === 3 ? p[0] + '階 ' + p[1] + '列 ' + p[2] + '番' : 'バルコニー ' + p[0] + '列 ' + p[1] + '番'; };
+const yen = n => '¥' + n.toLocaleString('ja-JP');
+
+// ---- 状態 ----
+let sid = ''; try { sid = localStorage.getItem('sd_sid') || ''; } catch (e) {}
+if (!sid) { sid = Array.from(crypto.getRandomValues(new Uint8Array(9)), b => b.toString(36)).join('').slice(0, 14); try { localStorage.setItem('sd_sid', sid); } catch (e) {} }
+let taken = {};       // 販売済み＋他の人が確保中
+let picked = [];      // 自分が選んだ席
+let until = 0;        // 確保の期限（0＝未確保）
+let skew = 0, busy = false, msg = '', msgOk = false;
+let bought = []; try { bought = JSON.parse(localStorage.getItem('sd_bought') || '[]'); } catch (e) {}
+
+async function api(op, extra) {
+  const r = await fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ action: 'seatdemo', op, sid }, extra || {})) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'エラー');
+  return j;
+}
+function apply(j) {
+  taken = {}; j.sold.forEach(x => taken[x] = 1); j.held.forEach(x => taken[x] = 1);
+  skew = j.now - Date.now();
+  if (j.mine.length) { picked = j.mine.slice(); until = j.until; } else if (until) { until = 0; }
+  picked = picked.filter(x => !taken[x]);
+  paint();
+}
+
+// ---- 描画 ----
+const map = document.getElementById('map'), wrap = document.getElementById('wrap');
+const VB = { x: -2.9, y: 0, w: 36.8, h: Y2 + 9 };
+map.setAttribute('viewBox', [VB.x, VB.y, VB.w, VB.h].join(' '));
+const el = (tag, at, txt) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; map.appendChild(e); return e; };
+el('rect', { x: 4, y: .3, width: 23, height: 1.5, rx: .3, class: 'stage' }); el('text', { x: 15.5, y: 1.3, class: 'stagetx' }, '舞台');
+el('text', { x: 15.5, y: Y2 - 1.2, class: 'lab' }, '2階席'); el('text', { x: 15.5, y: 2.3, class: 'lab', style: 'font-size:.55px' }, '1階席');
+el('text', { x: -1.55, y: 3.2, class: 'row' }, 'L列'); el('text', { x: 32.45, y: 3.2, class: 'row' }, 'R列');
+Object.keys(F1).forEach(r => { [6.45, 24.45].forEach(x => el('text', { x, y: y1(+r) + .65, class: 'row' }, r)); });
+Object.keys(F2).forEach(r => { [7.45, 23.45].forEach(x => el('text', { x, y: y2(+r) + .65, class: 'row' }, r)); });
+[[0, y1(10)], [29, y1(10)]].forEach(p => { el('rect', { x: p[0], y: p[1], width: 1.9, height: .9, rx: .15, class: 'wc' }); el('text', { x: p[0] + .95, y: p[1] + .62, class: 'row', style: 'font-size:.38px' }, '車椅子'); });
+SEATS.forEach(s => {
+  s.r = el('rect', { x: s.x + .05, y: s.y + .05, width: .9, height: .9, rx: .18, class: 'seat ' + s.tier, 'data-id': s.id });
+  s.t = el('text', { x: s.x + .5, y: s.y + .66, class: 'num' }, s.n);
+});
+let zoomed = false;
+function setZoom(z, cx, cy) {
+  zoomed = z;
+  const w = z ? Math.max(wrap.clientWidth, VB.w * 30) : wrap.clientWidth;
+  map.style.width = w + 'px'; map.style.height = (w * VB.h / VB.w) + 'px';
+  map.classList.toggle('zoom', z);
+  document.getElementById('zb').textContent = z ? '全体を見る' : '拡大する';
+  if (z && cx != null) {
+    wrap.scrollLeft = (cx - VB.x) / VB.w * w - wrap.clientWidth / 2;
+    window.scrollTo(0, wrap.getBoundingClientRect().top + window.scrollY + (cy / VB.h) * (w * VB.h / VB.w) - window.innerHeight / 3);
+  }
+}
+document.getElementById('zb').onclick = () => setZoom(!zoomed, 15.5, 10);
+window.addEventListener('resize', () => setZoom(zoomed));
+map.addEventListener('click', ev => {
+  if (!zoomed) { // 全体表示では、まず押した場所を拡大する
+    const b = map.getBoundingClientRect();
+    return setZoom(true, VB.x + (ev.clientX - b.left) / b.width * VB.w, (ev.clientY - b.top) / b.height * VB.h);
+  }
+  const id = ev.target.getAttribute && ev.target.getAttribute('data-id');
+  if (!id || taken[id] || busy) return;
+  if (until) { msg = '確保中は席を変えられません。変えるときは「選び直す」を押してください。'; msgOk = false; return paint(); }
+  const i = picked.indexOf(id);
+  if (i >= 0) picked.splice(i, 1);
+  else if (picked.length >= MAX) { msg = '一度に選べるのは' + MAX + '席までです。'; msgOk = false; return paint(); }
+  else picked.push(id);
+  msg = ''; paint();
+});
+
+function paint() {
+  const mine = {}; picked.forEach(x => mine[x] = 1);
+  let free = 0;
+  SEATS.forEach(s => {
+    const c = mine[s.id] ? ' me' : taken[s.id] ? ' x' : '';
+    if (!taken[s.id]) free++;
+    s.r.setAttribute('class', 'seat ' + s.tier + c); s.t.setAttribute('class', 'num' + c);
+  });
+  document.getElementById('left').textContent = '残り ' + free + ' 席 ／ 全 ' + SEATS.length + ' 席';
+  const sh = document.getElementById('sheet');
+  let h = '';
+  if (!picked.length) h = '<div class="hint">座席表を押して拡大し、席を選んでください（' + MAX + '席まで）。</div>';
+  else {
+    const sum = picked.reduce((a, x) => a + PRICE[BY[x].tier], 0);
+    h += '<h2>' + (until ? '確保中の席（残り <span id="cd"></span>）' : '選んだ席') + '</h2>';
+    picked.forEach(x => { h += '<div class="pick"><span>' + label(x) + ' <small>' + BY[x].tier + '席</small></span><span>' + yen(PRICE[BY[x].tier]) + '</span></div>'; });
+    h += '<div class="total"><span>合計 ' + picked.length + '枚</span><span>' + yen(sum) + '</span></div>';
+    if (until) h += '<button class="btn" id="buy"' + (busy ? ' disabled' : '') + '>購入を確定する（テスト）</button><button class="btn sub" id="rel"' + (busy ? ' disabled' : '') + '>選び直す</button>';
+    else h += '<button class="btn" id="hold"' + (busy ? ' disabled' : '') + '>' + (busy ? '確保しています…' : 'この席を確保する') + '</button>';
+  }
+  if (msg) h += '<div class="msg' + (msgOk ? ' ok' : '') + '">' + msg + '</div>';
+  sh.innerHTML = h;
+  const on = (id, f) => { const b = document.getElementById(id); if (b) b.onclick = f; };
+  on('hold', () => act('hold', { seats: picked }));
+  on('buy', () => act('buy'));
+  on('rel', () => act('release'));
+  const bx = document.getElementById('bought');
+  bx.innerHTML = bought.length ? '<h2>購入済みの席（この端末）</h2>' + bought.map(x => '<div class="tk">' + label(x) + '　' + BY[x].tier + '席</div>').join('') : '';
+  tick();
+}
+function tick() {
+  const c = document.getElementById('cd'); if (!c || !until) return;
+  const s = Math.max(0, Math.round((until - Date.now() - skew) / 1000));
+  c.textContent = Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2);
+  if (s <= 0) { until = 0; picked = []; msg = '確保の時間が切れました。もう一度選んでください。'; msgOk = false; refresh(); }
+}
+setInterval(tick, 1000);
+
+async function act(op, extra) {
+  if (busy) return; busy = true; msg = ''; paint();
+  try {
+    const j = await api(op, extra);
+    if (op === 'release') { picked = []; until = 0; }
+    if (j.conflict) { picked = picked.filter(x => j.conflict.indexOf(x) < 0); msg = j.conflict.map(label).join('、') + ' は、ほかの方が先に確保しました。'; msgOk = false; }
+    if (j.expired) { picked = []; until = 0; msg = '確保の時間が切れました。もう一度選んでください。'; msgOk = false; }
+    if (j.bought) { bought = bought.concat(j.bought); try { localStorage.setItem('sd_bought', JSON.stringify(bought)); } catch (e) {} picked = []; until = 0; msg = '購入を確定しました（テスト）。'; msgOk = true; }
+    apply(j);
+  } catch (e) { msg = e.message; msgOk = false; }
+  busy = false; paint();
+}
+async function refresh() { if (busy) return; try { apply(await api('state')); } catch (e) {} }
+document.getElementById('reset').onclick = async ev => {
+  ev.preventDefault();
+  if (!confirm('試作のテストデータ（販売済み・確保中）をすべて消します。よろしいですか？')) return;
+  bought = []; try { localStorage.removeItem('sd_bought'); } catch (e) {}
+  picked = []; until = 0; await act('reset');
+};
+setZoom(false); paint(); refresh();
+setInterval(() => { if (!document.hidden) refresh(); }, 7000);
+</script>
+</body>
+</html>
