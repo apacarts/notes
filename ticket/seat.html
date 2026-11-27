@@ -221,7 +221,7 @@ function paint() {
   else {
     const sum = picked.reduce((a, x) => a + PRICE[BY[x].tier], 0);
     h += '<h2>' + (until ? '確保中の席（残り <span id="cd"></span>）' : '選んだ席') + '</h2>';
-    picked.forEach(x => { h += '<div class="pick"><span>' + label(x) + ' <small>' + BY[x].tier + '席</small></span><span>' + yen(PRICE[BY[x].tier]) + '</span></div>'; });
+    picked.forEach(x => { h += '<div class="pick"><span>' + label(x) + ' <small>' + TNAME[BY[x].tier] + '</small></span><span>' + yen(PRICE[BY[x].tier]) + '</span></div>'; });
     h += '<div class="total"><span>合計 ' + picked.length + '枚</span><span>' + yen(sum) + '</span></div>';
     if (until) h += '<button class="btn" id="buy"' + (busy ? ' disabled' : '') + '>購入を確定する（テスト）</button><button class="btn sub" id="rel"' + (busy ? ' disabled' : '') + '>選び直す</button>';
     else h += '<button class="btn" id="hold"' + (busy ? ' disabled' : '') + '>' + (busy ? '確保しています…' : 'この席を確保する') + '</button>';
